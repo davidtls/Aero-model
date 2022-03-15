@@ -265,7 +265,7 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing):
     Tc = Fx_vec / (2 * rho * g.Sp * V_vect ** 2)
 
     F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
-    # F contains forces and moments in wind reference system, just the aerodynammic, not thrust
+    # F contains forces and moments in wind reference system, just the aerodynamic, not thrust
 
 
     Coefs=np.zeros(len(F))

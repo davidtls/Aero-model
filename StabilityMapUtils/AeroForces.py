@@ -168,7 +168,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
         CoefMatrix[4,0] = g.Cm_alpha_aero_interaction                                                                    #Use new CM_ALPHA
         M = np.dot(CoefMatrix[3:6,:],x)                                                                                  #Redo calculus with new Cm_alpha
-        F[2] = np.dot(CoefMatrix[2][1:],xsym[1:]) -g.aht*x[0]-g.CL0_HT                                                   #F[2] Calculated without alpha: CL_BETA*BETA + CL_P*P + CL_Q*Q + CL_R*R + CL_DA*|DA| + CL_DE*DE + CL_DR*|DR|   )
+        F[2] = np.dot(CoefMatrix[2][1:],xsym[1:]) + g.aht*x[0]-g.CL0_HT                                                   #F[2] Calculated without alpha: CL_BETA*BETA + CL_P*P + CL_Q*Q + CL_R*R + CL_DA*|DA| + CL_DE*DE + CL_DR*|DR|   )
                                                                                                                         #Terms for horizontal tail added (alpha, and 0-alpha term) to modify x[0] and g.CL0_HT to take into account slisptream
         if V<=g.VelFlap:
 

@@ -32,7 +32,6 @@ import pylab
 from StabilityMapUtils import ReadFileUtils
 from StabilityMapUtils import equation as e
 from StabilityMapUtils import AeroForces
-from StabilityMapUtils import MapVarClass
 import time
 import pickle
 import datetime
