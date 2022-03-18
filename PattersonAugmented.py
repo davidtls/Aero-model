@@ -435,34 +435,37 @@ class PropWing:
         '''
         Returns the coefficient as [CL, Cl, Cdi, Cd0]
         '''
-#        self.PlotDist(dx,atmo,aoa,dfl,plane,False)
+#        self.PlotDist(dx,atmo,aoa,dfl,plane,False) Already in main no need to activate it here
         results = self.SumDistributedCoef(self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane,beta,p,V,r),plane,beta,p,V,r)
         
         return results
 
-    def PlotDist(self,dx, Mach, atmo, aoa, dail, dfl, plane, IfSave,beta,p,V,r):
-        self.PlotDrag = True # only here for accoumpanying drag distribution
-        data = self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane,beta,p,V,r)
+    def PlotDist(self, dx, Mach, atmo, aoa, dail, dfl, plane, IfSave, beta, p, V, r):
+        self.PlotDrag = True  # only here for accompanying drag distribution
+        data = self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r)
         Dist = self.ReOrganiseLift(data)
-        self.Coef = self.SumDistributedCoef(data,plane,beta,p,V,r)
+        self.Coef = self.SumDistributedCoef(data, plane, beta, p, V, r)
         self.PlotDrag = False
-        plt.figure()
-        plt.plot(Dist['Yposi'],Dist['Cl'],linestyle='--',color='0.25',label='$T_c$ = {0:0.3f}'.format(dx[0]))
-        ax=plt.gca()
-        ax.set_xlabel('Y (m)')
+        plt.figure()                                                                                                    #  Create a new figure, or activate an existing figure.
+        plt.plot(Dist['Yposi'], Dist['Cl'], linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(dx[0]))       #  Plot y versus x as lines and/or markers.
+        ax = plt.gca()                                                                                                  #  Get the current Axes.
+        ax.set_xlabel('Y (m)')                                                                                          #  Writes label for an axe
         ax.set_ylabel('Local $C_L$')
         ax.legend()
         plt.grid()
         plt.tight_layout()
         
-        fig1=plt.figure()
-        ax1=fig1.gca()
-        ax1.plot(Dist['Yposi'],self.wiadim/(8*np.pi)*180/np.pi, label="$α_i$, $T_c$ = {0:0.3f}".format(dx[0]),linestyle='-.',color='0.25')
+        fig1 = plt.figure()
+        ax1 = fig1.gca()
+        ax1.plot(Dist['Yposi'], self.wiadim/(8*np.pi)*180/np.pi, label="$α_i$, $T_c$ = {0:0.3f}".format(dx[0]), linestyle='-.', color='0.25')
         ax1.set_xlabel('Y (m)')
         ax1.set_ylabel('Downwash angle (°)')
         ax1.legend()
         ax1.grid()
         fig1.tight_layout()
+
+        plt.show(block=True)   # added
+
         if IfSave:
             plt.savefig('./CurrentLiftRepartition.pdf')
         
@@ -579,14 +582,14 @@ class PropWing:
 
         for i in range(len(NormCl[:,0])):
 
-            alpha_t[i] = - (alpha0w[i]) + aoa + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[i,0]) + p * NormCl[i,0]/V
+            alpha_t[i] = - (alpha0w[i]) + aoa + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[i,0]) + p * NormCl[i,0]/V    #CHANGE V BY V_VECT OF 116 COMPONENTS
 
 
 
-        alpha_fl_t    = alpha_fl - alpha0w + plane.alpha_i
-        alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i
-        alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i
-        
+        alpha_fl_t    = alpha_fl    - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/V
+        alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/V
+        alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/V
+
         #corresponding alpha max, assume aileron stall angle is alpha_t_max:
 #        alpha_t_max = plane.alpha_max + alpha0w
 #        alpha_fl_t_max = plane.alpha_max_fl + alpha0w - self.alpha0_fl * dfl
