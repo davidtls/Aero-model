@@ -156,7 +156,7 @@ elif aircraft['model'] == 'ATR':
     alphastall = 11.7  # 11.5 #that's for patterson
     deltaRmax = 30  # in degree
     ThrottleMax = 1  # max thrust level
-    ThrottleMin = 1e-9  # min thruttle, don't accept 0 thrust
+    ThrottleMin = 1e-9  # min throttle, don't accept 0 thrust
     ThrottleMinExt = 1e-9  # -0.34
 
 
@@ -434,7 +434,7 @@ elif aircraft['model']=='DECOL':
 
 
 
-#Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
+Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
 
 
 
@@ -573,28 +573,28 @@ if g.minimize_in_alpha == True:
 
 # print results
 print(k)
-def printx(x, fix, atmo):
-    V=fix[0]
-    alpha=x[0]/math.pi*180
-    beta=fix[1]/math.pi*180
-    pqr=x[1:4]/math.pi*180
-    phi=x[4]/math.pi*180
-    theta=x[5]/math.pi*180
-    da=x[6]/math.pi*180
-    de=x[7]/math.pi*180
-        
+def printx(x, fix, atmo, g, PW):
+    V = fix[0]
+    alpha = x[0]/math.pi*180
+    beta = fix[1]/math.pi*180
+    pqr = x[1:4]/math.pi*180
+    phi = x[4]/math.pi*180
+    theta = x[5]/math.pi*180
+    da = x[6]/math.pi*180
+    de = x[7]/math.pi*180
+
     print("\nState vector value:")
-    print("V= {0:0.2f}m/s, alpha = {1:0.2f}\xb0, beta={2:0.2f}\xb0, phi={3:0.2f}\xb0, theta={4:0.2f}\xb0".format(V,alpha,beta,phi,theta))
+    print("V= {0:0.2f}m/s, alpha = {1:0.2f}\xb0, beta={2:0.2f}\xb0, phi={3:0.2f}\xb0, theta={4:0.2f}\xb0".format(V, alpha, beta, phi, theta))
     print("p={0:0.4f}\xb0/s q={1:0.4f}\xb0/s r={2:0.4f}\xb0/s".format(*pqr))
     print("da={0:0.2f}\xb0, de= {1:0.2f}\xb0".format(da,de))
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - pqr[2] * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[2] * g.PosiEng
 
     if g.IsPropWing:
-        if V<=g.VelFlap:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:],V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0],x[6],g.FlapDefl,g,False,beta,pqr[0],V,pqr[2])
+        if V <= g.VelFlap:
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, beta, x[1], V, x[2])
         else:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:],V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0],x[6],0,g,False,beta,pqr[0],V,pqr[2])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, beta, x[1], V, x[2])
 
     if g.nofin==False:
         print("dr = {0:0.2f}\xb0".format(x[8]/math.pi*180))
@@ -602,7 +602,7 @@ def printx(x, fix, atmo):
 
 
 
-printx(k.x, fixtest, atmospher)
+printx(k.x, fixtest, atmospher,g,PW)
 
 
 
