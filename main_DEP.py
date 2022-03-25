@@ -75,7 +75,8 @@ if aircraft['model'] == 'DECOL':
 
     Neng = 8
     inop_eng = 0
-    FlapDefl = 0  # in degree standard flap deflection. Deflections allowed : 0 and 15  degree
+    FlapDefl = 0  # in degree standard flap deflection. Deflections allowed : 0 and 15  degree.
+                  # For flap deflection V_base < VelFlap
 
 
     g = DECOLgeometry.data(1, Neng, inop_eng, FlapDefl , r=0.113 / 2, rf=0.1865 / 2, zw=0.045,TipClearance=True, dprop=0.1)  # arg = Vtsize + options(Neng, inop_eng, vertical tail parameters)
@@ -96,7 +97,7 @@ if aircraft['model'] == 'DECOL':
 
 
 
-    g.hangar = {'aircraft': 'DECOL', 'version': 'original'} #original to use twin engine model (all engines equal power)
+    g.hangar = {'aircraft':'DECOL', 'version':'original'}  # Original for twin engine model (all engines same power)
 
     g.P_var = 8 * 14.4 * 4  # I*V*N_eng/2
     g.VelFlap = 12.5  # in m/s the maximum velocity at which flap are deployed
@@ -115,7 +116,7 @@ if aircraft['model'] == 'DECOL':
 
 
     # ---- Optim parameter ------
-    MaxIter = 100  #
+    MaxIter = 100
     tolerance = 1e-3
     method = 'trust-interior'
 
@@ -189,7 +190,7 @@ elif aircraft['model'] == 'ATR':
 
     """ Algorithm set up """
     # ---- Optim parameter ------
-    MaxIter =  100
+    MaxIter = 100
     tolerance = 1e-5
     method = 'SLSQP'  # 'trust-interior' or 'SLSQP'
 
@@ -434,7 +435,7 @@ elif aircraft['model']=='DECOL':
 
 
 
-Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
+#Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
 
 
 
@@ -588,13 +589,13 @@ def printx(x, fix, atmo, g, PW):
     print("p={0:0.4f}\xb0/s q={1:0.4f}\xb0/s r={2:0.4f}\xb0/s".format(*pqr))
     print("da={0:0.2f}\xb0, de= {1:0.2f}\xb0".format(da,de))
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[2] * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[3] * g.PosiEng
 
     if g.IsPropWing:
         if V <= g.VelFlap:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, beta, x[1], V, x[2])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, fix[1], x[1], V, x[3])
         else:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, beta, x[1], V, x[2])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, fix[1], x[1], V, x[3])
 
     if g.nofin==False:
         print("dr = {0:0.2f}\xb0".format(x[8]/math.pi*180))

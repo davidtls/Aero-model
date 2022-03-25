@@ -37,8 +37,8 @@ class data:
     ftaper = 0.55  # taper ratio of VT
     fAR = 1.57  # aspect ratio of VT
     FusWidth = 2.82
-    bh = 4  # in m the HT wingspan
-    Sh = 11.13
+    bh = 7.21  # in m the HT wingspan
+    Sh = 11.13  # Horizontal tail surface
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 1.02     Volume coefficient of Horizontal tail
     # it =                  # Horizontal tail tilt angle
     taudr = 0.30  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
@@ -92,7 +92,7 @@ class data:
 
     
     # ---Unique coeff ---
-    aht = 0.722        # Horizontal tail lift coefficient. OpenVSP files give positive value between 0.6 - 0.8118
+    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered
     # epsi_dot =        # down-wash at tail
     # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     # Cm_alpha_fus =
@@ -103,8 +103,8 @@ class data:
     # without flaps
     CD0T = 0.03383  # from OpenVSP, parasitic zero lift drag      THESIS HAMBURG 0.027403
     CD0T_wo_VT = 0.03112
-    CL0 = 0.516601
-    CL0_HT = -0.028151    # doesnt lift, creates pitching positive moment
+    CL0 = 0.5155
+    CL0_HT = -0.0284    # doesnt lift, creates pitching positive moment
     Cm0 = 0.150552
 
     Cda_fl_0 = 1.145
@@ -116,7 +116,7 @@ class data:
     CL0_fl_15 = 0.500216      # extra lift
     Cm0_fl_15 = 0.083884      # extra moment
 
-    Cda_fl_15 = 1.0322
+    Cda_fl_15 = 1.0322     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
     Cdb_fl_15 = 0.3508
     Cdc_fl_15 = 0.057
 
@@ -125,7 +125,7 @@ class data:
     CL0_fl_30 = 0.862201     # extra drag
     Cm0_fl_30 = 0.144949     # extra moment
 
-    Cda_fl_30 = 0.8979
+    Cda_fl_30 = 0.8979     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
     Cdb_fl_30 = 0.4443
     Cdc_fl_30 = 0.0958
 
@@ -260,7 +260,7 @@ class data:
                 self.Dp = (self.b/2-self.FusWidth/2)/(N_eng/2+dfus-0.5+(N_eng/2-1)*dprop)                               #Bigger Dp than in previous case.
             
             self.Sp = self.Dp**2/4*math.pi                                                                              #frontal surface propeller = pi*radio^2
-            self.xp = self.Dp/2                                                                                         #radio propeller
+            self.xp = self.Dp/2                                                                                         #Is the distance between propeller and leading edge
             self.step_y=self.Dp+dprop*self.Dp
             
             if TipClearance == True:
@@ -356,8 +356,8 @@ class data:
         MVeDSC=np.copy(MCoef) # create a copy of the coefficients matrix
         if self.nofin == False:
             # add a column to account for rudder
-            dimZero = len(MVeDSC[:,0])
-            MVeDSC = np.hstack( (MVeDSC,np.zeros((dimZero,1))) ) 
+            dimZero = len(MVeDSC[:, 0])
+            MVeDSC = np.hstack((MVeDSC, np.zeros((dimZero, 1))))
             
         K = self.Kf*self.Kh*self.Kw
 #        print('New VT efficiency = {0:0.4f}'.format(K))
@@ -368,19 +368,19 @@ class data:
             eta = cla/(2*math.pi)
             av = -(Av * cla * math.cos(self.fswept) * 1/math.sqrt(1-Mach[i]**2*(math.cos(self.fswept))**2))/(Av*math.sqrt(1+4*eta**2/(Av/math.cos(self.fswept))**2)+2*eta*math.cos(self.fswept))# mach number formula
 #            print(av)
-            VeDSC_Coef=np.array([[0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0]])
-            VeDSC_Coef[0,0] = K*av*self.Sv/self.S
-            VeDSC_Coef[0,1] = K*av*self.Sv/self.S*self.zf/self.b*2
-            VeDSC_Coef[0,2] = -K*av*self.Sv/self.S*2*self.lv/self.b
-            VeDSC_Coef[0,3] = -self.Kdr*av*self.taudr*self.Sv/self.S
-            VeDSC_Coef[1,0] = K*av*self.Sv/self.S*2*self.zf/self.b
-            VeDSC_Coef[1,1] = 0
-            VeDSC_Coef[1,2] = -K*av*self.Sv/self.S*self.zf/self.b*self.lv/self.b*2.0
-            VeDSC_Coef[1,3] = -self.Kdr*av*self.taudr*self.Sv/self.S*2*self.zf/self.b
-            VeDSC_Coef[2,0] = -K*av*self.lv/self.b*self.Sv/self.S
-            VeDSC_Coef[2,1] = -K*av*self.lv/self.b*self.Sv/self.S*self.zf/self.b*2.0
-            VeDSC_Coef[2,2] = K*av*self.lv/self.b*self.Sv/self.S*self.lv/self.b*2.0
-            VeDSC_Coef[2,3] = self.Kdr*av*self.taudr*self.lv/self.b*self.Sv/self.S
+            VeDSC_Coef = np.array([[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],[0.0, 0.0, 0.0, 0.0]])
+            VeDSC_Coef[0, 0] = K*av*self.Sv/self.S
+            VeDSC_Coef[0, 1] = K*av*self.Sv/self.S*self.zf/self.b*2
+            VeDSC_Coef[0, 2] = -K*av*self.Sv/self.S*2*self.lv/self.b
+            VeDSC_Coef[0, 3] = -self.Kdr*av*self.taudr*self.Sv/self.S
+            VeDSC_Coef[1, 0] = K*av*self.Sv/self.S*2*self.zf/self.b
+            VeDSC_Coef[1, 1] = 0
+            VeDSC_Coef[1, 2] = -K*av*self.Sv/self.S*self.zf/self.b*self.lv/self.b*2.0
+            VeDSC_Coef[1, 3] = -self.Kdr*av*self.taudr*self.Sv/self.S*2*self.zf/self.b
+            VeDSC_Coef[2, 0] = -K*av*self.lv/self.b*self.Sv/self.S
+            VeDSC_Coef[2, 1] = -K*av*self.lv/self.b*self.Sv/self.S*self.zf/self.b*2.0
+            VeDSC_Coef[2, 2] = K*av*self.lv/self.b*self.Sv/self.S*self.lv/self.b*2.0
+            VeDSC_Coef[2, 3] = self.Kdr*av*self.taudr*self.lv/self.b*self.Sv/self.S
             # Coefficients are computed now access the right matrix and replace them
             VarPosi = (1, 2, 4)
             EffPosi = (1, 3, 5)
@@ -391,11 +391,11 @@ class data:
                 #MVeDSC[EffPosi[kk]+i*NumEff,-1]=MVeDSC[EffPosi[kk]+i*NumEff,-1]*self.VTsize
                 # Replace rudder coefficient
                 if self.nofin == False:
-                    MVeDSC[EffPosi[kk]+i*NumEff,-1] = VeDSC_Coef[kk,-1]                  #Adds CY_delta_r   ,  Cl_delta_r  ,  Cn_delta_r  (there were 0s before)
+                    MVeDSC[EffPosi[kk]+i*NumEff, -1] = VeDSC_Coef[kk, -1]                  #Adds CY_delta_r   ,  Cl_delta_r  ,  Cn_delta_r  (there were 0s before)
 
                 # Now coefficients are from the finless ATR. Add new coefficients to the matrix
                 for jj in range(len(VarPosi)):
-                    if VeDSC_Coef[kk,jj] != 0:
+                    if VeDSC_Coef[kk, jj] != 0:
                         MVeDSC[EffPosi[kk]+i*NumEff, VarPosi[jj]] = MVeDSC[EffPosi[kk]+i*NumEff, VarPosi[jj]]+VeDSC_Coef[kk, jj]      #adds a term to CY_beta  CY_p CY_r
                         # Cl_beta  Cl_p  Cl_r   Cn_beta  Cn_p  Cn_r
 #            print(VeDSC_Coef)
