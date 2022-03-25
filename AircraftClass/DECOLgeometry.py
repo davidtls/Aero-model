@@ -38,7 +38,7 @@ class data:
     fAR = 1.8                   # Fin aspect ratio, aspect ratio of VT
     FusWidth = 0.170          # width of the fuselage
     bh = 0.611                # Horizontal tail wingspan
-    Sh = 0.0877
+    Sh = 0.0877  # Horizontal tail surface
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 0.7552  Volume coef of Horizontal tail
     it = 2.1/180*np.pi             # Horizontal tail tilt angle
     taudr = 0.24  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
@@ -49,13 +49,13 @@ class data:
 
     # flap and aileron definition
     isflap = True
-    FlPosi = 0.0425 # with respect to wingspan, the start position of flap [0,0.5]
-    FlRatio = 0.2325*2 # the total flap length to wingspan ratio
-    FlChord = 0.25 # with respect to local chord, flap chord
+    FlPosi = 0.0425  # with respect to wingspan, the start position of flap [0,0.5]
+    FlRatio = 0.2325*2  # the total flap length to wingspan ratio
+    FlChord = 0.25  # with respect to local chord, flap chord
     isail = True
-    AilDiff = 0.5 # ratio of aileron differential: deflection down is only half as important
-    AilPosi = 0.275 # [0,0.5]
-    AilRatio = 0.225 # One aileron should be consistent with b/2 >= AilRatio + AilPosi
+    AilDiff = 0.5  # ratio of aileron differential: deflection down is only half as important
+    AilPosi = 0.275  # [0,0.5]
+    AilRatio = 0.225  # One aileron should be consistent with b/2 >= AilRatio + AilPosi
     AilChord = 0.25
 
 
@@ -72,9 +72,9 @@ class data:
 
 
     #--- Power ---
-    P_a=576      # in W equivalent of a twin engine. Limited to 10A per controller
-    hp=0 # rotor term
-    prop_eff=0.7       # Propulsion efficiency
+    P_a = 576      # in W equivalent of a twin engine. Limited to 10A per controller
+    hp = 0  # rotor term
+    prop_eff = 0.7       # Propulsion efficiency
     ip = (-2.41)/180*np.pi  # propeller incidence angle with respect to zero lift line
     Pkeyword = 'DefaultPatterson'  # designate the propulsion model used to compute thrust
 
@@ -118,7 +118,7 @@ class data:
     CL0_fl_15 = 0.27142           # Extra lift due to flaps when no patterson used
     Cm0_fl_15 = 0.096931          # Extra pitch moment due to flaps
 
-    Cda_fl_15 = 1.4937
+    Cda_fl_15 = 1.4937      # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
     Cdb_fl_15 = 0.4327
     Cdc_fl_15 = 0.0905
 
@@ -132,14 +132,14 @@ class data:
     alpha_i = 3.2/180*np.pi
     
     #airfoil zero lift angle       angle between reference line of profile and zero lift line of airfoil. Negative means that airfoil lifts with 0 local angle of attack
-    alpha_0 = -2.41/180*np.pi-alpha_i  # update with vsp file
+    alpha_0 = -2.41/180*np.pi  # update with vsp file
     
     
 
 
     
     # Input file name
-    Files =['cldistribution','polar','flappolar','aileronpolar'] # best to replace the value
+    Files = ['cldistribution', 'polar', 'flappolar', 'aileronpolar']  # best to replace the value
     alphaVSP = 0/180*np.pi
     PolarFlDeflDeg = 5
 
@@ -153,58 +153,58 @@ class data:
 
 
     #unique data go here:
-    def CalcKf(self, bv,r):
+    def CalcKf(self, bv, r):
         return 1.4685*(bv/(2*r))**(-0.143)
     
-    def CalcKw(self, zw,rf):
+    def CalcKw(self, zw, rf):
         return -0.0131*(zw/rf)**2-0.0459*(zw/rf)+1.0026
         
-    def CalcKh(self, zh,bvl, Sh, Sv):
-        x=zh/bvl
-        Khp=0.906*x**2-0.8403*x+1.1475
-        Khs=math.exp(0.0797*math.log(Sh/Sv)-0.0079)
+    def CalcKh(self, zh, bvl, Sh, Sv):
+        x = zh/bvl
+        Khp = 0.906*x**2-0.8403*x+1.1475
+        Khs = math.exp(0.0797*math.log(Sh/Sv)-0.0079)
         return 1+Khs*(Khp-1)
     
-    def CalcKdr(self, Kf,Av):
+    def CalcKdr(self, Kf, Av):
 #        Kdr=(1+((Kf-1)/2.2))*(1.33-0.09*Av) # for T-tail formula
-        Kdr=1.07*(1+(Kf-1)/2.2) # for a body mounted H tail
+        Kdr = 1.07*(1+(Kf-1)/2.2)  # for a body mounted H tail
         return Kdr
     
     def set_nofin(self, boolean):
-        if type(boolean)==bool:
-               self.nofin=boolean # flag to use or not rudder
+        if type(boolean) == bool:
+               self.nofin = boolean  # flag to use or not rudder
         else:
             sys.exit("Error type of 'nofin' isn't a boolean. Stopping")
             
     def loadAtmo(self):
 #        filename='/home/e.nguyen-van/Documents/codesign-small-tail/Python/DECOL_Polar/si2py.txt'#'/home/e.nguyen-van/Documents/codesign-small-tail/Python/DECOL_Polar'
-        sep='\t'
-        file=open("si2py.txt",'r')
-        vecname=file.readline()
-        index=0
-        VariableList=[]
-        condition=True
+        sep = '\t'
+        file = open("si2py.txt", 'r')
+        vecname = file.readline()
+        index = 0
+        VariableList = []
+        condition = True
         while condition:
             VariableList.append(vecname[index:vecname.index(sep,index)])
-            if VariableList[-1]=='kvisc':
-                condition=False
+            if VariableList[-1] == 'kvisc':
+                condition = False
             index=vecname.index(sep,index)+1
             
-        units=file.readline() # skip units
-        data=[]
-        VariableDic={}
+        units = file.readline() # skip units
+        data = []
+        VariableDic = {}
         for j in range(len(VariableList)):
-            exec("VariableDic['"+VariableList[j]+"'] = []") #initialize my variables
+            exec("VariableDic['"+VariableList[j]+"'] = []")  # initialize my variables
             
         for line in file:
-            mylist=[]
-            element=""
+            mylist = []
+            element = ""
             for k in range(len(line)):
-                if line[k]!='\t' and line[k]!='\n':
-                    element=element+line[k]
+                if line[k] != '\t' and line[k] != '\n':
+                    element = element+line[k]
                 else:
                     mylist.append(element)
-                    element=""
+                    element = ""
             data.append(mylist)
         file.close()
         
@@ -219,14 +219,14 @@ class data:
         # must be recalled to change engine number
         # adjusts prop dia and engine position
         
-        self.N_eng=N_eng # number of engines
-        self.inop=inop_eng # number of inoperative engines
-        self.dprop=dprop # spacing between propeller.
+        self.N_eng = N_eng  # number of engines
+        self.inop = inop_eng  # number of inoperative engines
+        self.dprop = dprop  # spacing between propeller.
         
-        if N_eng % 2 !=0:
+        if N_eng % 2 != 0:
             sys.exit("Number of engine is not even")
         
-        if N_eng>2:
+        if N_eng > 2:
             #Compute Propeller Diameter
             """ Propeller diameter
             Patterson theory is limited at wing tip. Should let one prop diameter as margin
@@ -234,7 +234,7 @@ class data:
             Inclusion of margin coefficients (dtip, dfus) and seperation factor(dprop)
             """
             
-            if TipClearance==True:
+            if TipClearance == True:
 
                 self.Dp = (self.b/2-self.FusWidth/2)/(N_eng/2+dfus+(N_eng/2-1)*dprop)
             else:
@@ -243,23 +243,23 @@ class data:
             
             self.Sp = self.Dp**2/4*math.pi
             self.xp = self.Dp/2
-            self.step_y=self.Dp+dprop*self.Dp
+            self.step_y = self.Dp+dprop*self.Dp
             
-            if TipClearance==True:
-                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5),self.b/2,self.step_y)
+            if TipClearance == True:
+                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2, self.step_y)
             else:
-                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5),self.b/2+self.Dp/2,self.step_y)
+                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2+self.Dp/2, self.step_y)
                 
-            self.PosiEng = np.append(-self.PosiEng,self.PosiEng)
+            self.PosiEng = np.append(-self.PosiEng, self.PosiEng)
             self.PosiEng = np.sort(self.PosiEng)
             
         else:
             #default twin engine position
-            self.step_y=0.2
-            self.PosiEng=np.array([-self.step_y,self.step_y])
-            self.Dp=0.336 # 14" propeller
-            self.Sp=self.Dp**2/4*math.pi
-            self.xp = self.Dp/2
+            self.step_y = 0.2
+            self.PosiEng = np.array([-self.step_y, self.step_y])
+            self.Dp = 0.336  # 14" propeller
+            self.Sp = self.Dp**2/4*math.pi
+            self.xp = self.Dp/2                                                                                         #This is distance from propeller to leading edge
             
         return
 
@@ -269,35 +269,35 @@ class data:
         
         self.SetEngineNumber(N_eng, inop_eng, TipClearance, dfus, dprop)
                 
-        self.Sv=Sv
-        self.SvBase=Sv
-        self.bv=bv
-        self.r=r
-        self.Av=bv**2/Sv
-        self.Sh=Sh
-        self.zw=zw
-        self.rf=rf
-        self.zh=zh
-        self.bvl=bv+r
+        self.Sv = Sv
+        self.SvBase = Sv
+        self.bv = bv
+        self.r = r
+        self.Av = bv**2/Sv
+        self.Sh = Sh
+        self.zw = zw
+        self.rf = rf
+        self.zh = zh
+        self.bvl = bv+r
         
         #Update drag
         self.Cdvt = 0.01374*Sv/self.S
         
         #Nicolosi csts
-        self.Kf=self.CalcKf(bv,r)
-        self.Kw=self.CalcKw(zw,rf)
-        self.Kh=self.CalcKh(zh,bvl,Sh,Sv)
-        self.Kdr=self.CalcKdr(self.Kf,self.Av)
-        self.taudrBase=0.018/Sv*0.8 #Rudder surface/fin surface * efficiency of rudder, rudder surface proportional to vtsize
+        self.Kf = self.CalcKf(bv, r)
+        self.Kw = self.CalcKw(zw, rf)
+        self.Kh = self.CalcKh(zh, bvl, Sh, Sv)
+        self.Kdr = self.CalcKdr(self.Kf, self.Av)
+        self.taudrBase = 0.018/Sv*0.8  #Rudder surface/fin surface * efficiency of rudder, rudder surface proportional to vtsize
         #Atmosphere
-        self.AtmoDic=self.loadAtmo()
+        self.AtmoDic = self.loadAtmo()
 
         #Aero coefficients for DragQuad
         self.FlapDefl = FlapDefl
         self.Cdo_fl, self.CL0_fl, self.Cm0_fl, self.Cda, self.Cdb, self.Cdc = self.AeroCoefs(FlapDefl)
         
         #Load propeller
-        self.InitPropeller(8,6)
+        self.InitPropeller(8, 6)
 
 
     def AeroCoefs(self, FlapDefl):
@@ -322,7 +322,7 @@ class data:
 
 
     def InitPropeller(self, Dia, Pitch):                                       #Dia: Diameter in inches of propeller
-        self.Propeller = Propu(Dia,Pitch)
+        self.Propeller = Propu(Dia, Pitch)
 
         #update information about propeller
         self.Dp = Dia*0.0254
@@ -339,77 +339,77 @@ class data:
         # to call only once, it computes for every velocities/Mach number. Then linear interpol
         # Cy_beta, Cy_p = 0, Cy_r = 0, Cl_beta = 0, Cl_r = 0, Cn_beta= 0, Cn_p = 0, Cn_n = 0
         
-        MVeDSC=np.copy(MCoef) # create a copy of the coefficients matrix
-        if self.nofin==False:
+        MVeDSC = np.copy(MCoef)  # create a copy of the coefficients matrix
+        if self.nofin == False:
             # add a column to account for rudder
-            dimZero = len(MVeDSC[:,0])
-            MVeDSC = np.hstack( (MVeDSC,np.zeros((dimZero,1))) ) 
+            dimZero = len(MVeDSC[:, 0])
+            MVeDSC = np.hstack((MVeDSC, np.zeros((dimZero, 1))))
         
-        K=self.Kf*self.Kh*self.Kw
+        K = self.Kf*self.Kh*self.Kw
         for i in range(len(Mach)):
             Av = self.bv**2/self.Sv
 #            print(Av)
-            cla=2*math.pi # local lift curve slope coefficient of fin (perpendicular to leading edge) per rad
-            eta=cla/(2*math.pi)
+            cla = 2*math.pi # local lift curve slope coefficient of fin (perpendicular to leading edge) per rad
+            eta = cla/(2*math.pi)
             av = -(Av * cla * math.cos(self.fswept) * 1/math.sqrt(1-Mach[i]**2*(math.cos(self.fswept))**2))/(Av*math.sqrt(1+4*eta**2/(Av/math.cos(self.fswept))**2)+2*eta*math.cos(self.fswept))# mach number formula
 #            print(av)
-            VeDSC_Coef=np.array([[0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0]])
-            VeDSC_Coef[0,0]=K*av*self.Sv/self.S
-            VeDSC_Coef[0,1]=K*av*self.Sv/self.S*self.zf/self.b*2
-            VeDSC_Coef[0,2]=-K*av*self.Sv/self.S*2*self.lv/self.b #apparently x position of fin doesn't change
-            VeDSC_Coef[0,3]=-self.Kdr*av*self.taudr*self.Sv/self.S
-            VeDSC_Coef[1,0]= K*av*self.Sv/self.S*2*self.zf/self.b
-            VeDSC_Coef[1,1]=0
-            VeDSC_Coef[1,2] = -K*av*self.Sv/self.S*self.zf/self.b*self.lv/self.b*2.0
-            VeDSC_Coef[1,3] = -self.Kdr*av*self.taudr*self.Sv/self.S*2*self.zf/self.b
-            VeDSC_Coef[2,0] = -K*av*self.lv/self.b*self.Sv/self.S
-            VeDSC_Coef[2,1] = -K*av*self.lv/self.b*self.Sv/self.S*self.zf/self.b*2.0
-            VeDSC_Coef[2,2] = K*av*self.lv/self.b*self.Sv/self.S*self.lv/self.b*2.0
-            VeDSC_Coef[2,3] = self.Kdr*av*self.taudr*self.lv/self.b*self.Sv/self.S
+            VeDSC_Coef = np.array([[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]])
+            VeDSC_Coef[0, 0] = K*av*self.Sv/self.S
+            VeDSC_Coef[0, 1] = K*av*self.Sv/self.S*self.zf/self.b*2
+            VeDSC_Coef[0, 2] = -K*av*self.Sv/self.S*2*self.lv/self.b #apparently x position of fin doesn't change
+            VeDSC_Coef[0, 3] = -self.Kdr*av*self.taudr*self.Sv/self.S
+            VeDSC_Coef[1, 0] = K*av*self.Sv/self.S*2*self.zf/self.b
+            VeDSC_Coef[1, 1] = 0
+            VeDSC_Coef[1, 2] = -K*av*self.Sv/self.S*self.zf/self.b*self.lv/self.b*2.0
+            VeDSC_Coef[1, 3] = -self.Kdr*av*self.taudr*self.Sv/self.S*2*self.zf/self.b
+            VeDSC_Coef[2, 0] = -K*av*self.lv/self.b*self.Sv/self.S
+            VeDSC_Coef[2, 1] = -K*av*self.lv/self.b*self.Sv/self.S*self.zf/self.b*2.0
+            VeDSC_Coef[2, 2] = K*av*self.lv/self.b*self.Sv/self.S*self.lv/self.b*2.0
+            VeDSC_Coef[2, 3] = self.Kdr*av*self.taudr*self.lv/self.b*self.Sv/self.S
             # Coefficients are computed now access the right matrix and replace them
-            VarPosi=(1,2,4)
-            EffPosi=(1,3,5)
-            NumEff = 6 # number of force equations
+            VarPosi = (1, 2, 4)
+            EffPosi = (1, 3, 5)
+            NumEff = 6  # number of force equations
 #            print(VeDSC_Coef[2,2])
             for kk in range(len(EffPosi)):
                 # Replace rudder coefficient
-                if self.nofin==False:
-                    MVeDSC[EffPosi[kk]+i*NumEff,-1]=VeDSC_Coef[kk,-1]
+                if self.nofin == False:
+                    MVeDSC[EffPosi[kk]+i*NumEff, -1] = VeDSC_Coef[kk, -1]
                 # Now coefficients are from the finless DECOL. Add new coefficients to the matrix
                 for jj in range(len(VarPosi)):
-                    if VeDSC_Coef[kk,jj]!=0:
-                        MVeDSC[EffPosi[kk]+i*NumEff,VarPosi[jj]]=MVeDSC[EffPosi[kk]+i*NumEff,VarPosi[jj]]+VeDSC_Coef[kk,jj]
+                    if VeDSC_Coef[kk, jj] != 0:
+                        MVeDSC[EffPosi[kk]+i*NumEff, VarPosi[jj]] = MVeDSC[EffPosi[kk]+i*NumEff, VarPosi[jj]]+VeDSC_Coef[kk, jj]
 #            print(VeDSC_Coef)
             
         return MVeDSC
         
     
-    def AdjustVT(self, VTNewSize=1):
+    def AdjustVT(self, VTNewSize = 1):
         # Adjust VT geometry parameters based on VTsize
         # Change only Kf, Kw and Kh, does not modify internal goem param
         
         # local variables
-        Sv=self.SvBase
-        bv=self.bv
-        r=self.r
-        Av=self.Av
+        Sv = self.SvBase
+        bv = self.bv
+        r = self.r
+        Av = self.Av
         
-        if VTNewSize!=1:
-            Sv=Sv*VTNewSize
+        if VTNewSize != 1:
+            Sv = Sv*VTNewSize
             taudr = self.taudrBase*VTNewSize
         else:
-            Sv=Sv*self.VTsize
-            taudr =self.taudrBase
+            Sv = Sv*self.VTsize
+            taudr = self.taudrBase
         
-        self.bv=(Av*Sv)**0.5
-        self.zh=r+0.77*bv
-        self.bvl=bv+r
-        self.taudr=taudr
+        self.bv = (Av*Sv)**0.5
+        self.zh = r+0.77*bv
+        self.bvl = bv+r
+        self.taudr = taudr
         
         # Compute new coef if necessary
-        self.Sv=Sv
-        self.Kf=self.CalcKf(self.bv,r)
-        self.Kh=self.CalcKh(self.zh,self.bvl,self.Sh,Sv)
+        self.Sv = Sv
+        self.Kf = self.CalcKf(self.bv, r)
+        self.Kh = self.CalcKh(self.zh, self.bvl, self.Sh, Sv)
         
         
         return np.array([self.Kf, self.Kh])
@@ -420,68 +420,68 @@ class data:
         # Change only Kf, Kw and Kh
         
         # local variables
-        Sv=self.SvBase
-        bv=self.bv
+        Sv = self.SvBase
+        bv = self.bv
         
-        if VTNewSize!=1:
-            Sv=Sv*VTNewSize
+        if VTNewSize != 1:
+            Sv = Sv*VTNewSize
         else:
-            Sv=Sv*self.VTsize
+            Sv = Sv*self.VTsize
         
-        self.Av=bv**2/Sv
+        self.Av = bv**2/Sv
         
         # Compute new coef if necessary
-        self.Sv=Sv
-        self.Kh=self.CalcKh(self.zh,self.bvl,self.Sh,Sv)
+        self.Sv = Sv
+        self.Kh = self.CalcKh(self.zh, self.bvl, self.Sh, Sv)
         
         return np.array([self.Kh])
     
-    def GetAtmo(self,h=0):
+    def GetAtmo(self, h=0):
         """
         Using the atmosphere model loaded before, it outputs [a_sound, rho] at
         the desired h=altitude. It doesn't perform interpolation.
         """
-        Condition=h/500 is int 
+        Condition = h/500 is int
         if Condition:
-            Indice=h//500+1
+            Indice = h//500+1
             
         else:
-            if (h/500)<(h//500+500/2):
-                Indice=int(h//500+1)
+            if (h/500) < (h//500+500/2):
+                Indice = int(h//500+1)
             else:
-                Indice=int(h//500+2)
+                Indice = int(h//500+2)
         
-        results=np.array([self.AtmoDic['a'][Indice],self.AtmoDic['dens'][Indice]])
+        results = np.array([self.AtmoDic['a'][Indice], self.AtmoDic['dens'][Indice]])
         return results
     
-    def DefaultProp(self,dx,V):
+    def DefaultProp(self, dx, V):
         '''
         Compute thrust based on throttle levels dx
         Uses original model
         '''
-        Thr=np.sum(dx)*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
+        Thr = np.sum(dx)*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
         
         return Thr
     
     def DefaultPropPatterson(self, dx, V):
         #Same as defaultprop but returns a vector instead
-        Thr=dx*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
+        Thr = dx*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
         
         return Thr
     
 
-    def DefaultTorque(self,dx,V):
+    def DefaultTorque(self, dx, V):
         '''
         Compute torque based on default algo
         '''
-        M_y=0 # initialization
-        M_y=-np.dot(dx,self.PosiEng)
+        M_y = 0 # initialization
+        M_y = -np.dot(dx, self.PosiEng)
         # for i in range(n_eng):
         #     M_y=M_y+x[start+i]*g.step_y*(n_eng-i)
         # for i in range(n_eng):
         #     M_y=M_y-x[-i-1]*g.step_y*(n_eng-i)
             
-        M_y=M_y*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
+        M_y = M_y*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
         
         return M_y
     
@@ -493,8 +493,8 @@ class data:
 
 
     def Thrust(self, dx, V, theta_i=np.array([None])):
-        if self.Pkeyword=='Default':
-            return self.DefaultProp(dx,V)
+        if self.Pkeyword == 'Default':
+            return self.DefaultProp(dx, V)
         
         if self.Pkeyword == 'BaseFunction':
             if theta_i.any() is None:
@@ -513,20 +513,20 @@ class data:
 
 
     def Torque(self, dx, V, theta_i=np.array([None])):
-        if self.Pkeyword=='Default':
-            return self.DefaultTorque(dx,V)
+        if self.Pkeyword == 'Default':
+            return self.DefaultTorque(dx, V)
 
         if self.Pkeyword == 'BaseFunction':
             if theta_i.any() is None:
-                return self.BasisFunTorque(self.Theta_i,dx, V)
+                return self.BasisFunTorque(self.Theta_i, dx, V)
             else:
                 return self.BasisFunTorque(theta_i, dx, V)
 
         if self.Pkeyword == 'Selig':
-                return self.TorqueSelig(dx,V)
+                return self.TorqueSelig(dx, V)
 
         if self.Pkeyword == 'DefaultPatterson':
-            return self.DefaultTorque(dx,V)
+            return self.DefaultTorque(dx, V)
 
         else:
             return None
@@ -537,11 +537,11 @@ class data:
         
         return None
     
-    def ThrustSelig(self, dx,V):
+    def ThrustSelig(self, dx, V):
         #Compute thrust of each engine based on propeller file from selig
         
         #interpol J first
-        localJ = self.Propeller.DetermineJ(dx,V,self.P_var*2/self.N_eng)
+        localJ = self.Propeller.DetermineJ(dx, V, self.P_var*2/self.N_eng)
         
         #get thrust
         Ct = self.Propeller.getCt(J=localJ)
@@ -556,4 +556,4 @@ class data:
         
         Thr = self.ThrustSelig(dx, V)
         
-        return -np.dot(self.PosiEng,Thr)
+        return -np.dot(self.PosiEng, Thr)

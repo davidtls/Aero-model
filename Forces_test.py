@@ -10,6 +10,7 @@ author: david.planas-andres
 import numpy as np
 import math
 from numpy.linalg import inv
+
 import ReadFileUtils as Read  # utils to read Xfoil file
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
@@ -20,12 +21,13 @@ import matplotlib.pyplot as plt
 def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
 
+
     #x = [alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, delta_i(hay 12), V , beta , gamma, omega] = x + fix
 
 
     rho = atmo[1]
     n_eng = int(g.N_eng / 2)
-    PW=PropWing
+    PW = PropWing
 
 
     # --- Now prepare variables for equations ---
@@ -36,7 +38,7 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     omega = 0
     p = 0
     q = 0
-    r = 0.5
+    r = 0
     phi = -0.0000493944669
     theta = alpha+gamma
     aileron = 0.00001
@@ -44,10 +46,12 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     rudder = 0.00020
     delta_x = 1
 
-    x = np.array([alpha, p, q, r, phi, theta, aileron , elevator , rudder])
+    # Flaps : Flaps must be changed from main.
+
+    x = np.array([alpha, p, q, r, phi, theta, aileron, elevator, rudder])
 
     for i in range(int(g.N_eng)):
-       x= np.append(x,delta_x )
+       x = np.append(x, delta_x)
 
     I = np.array([[g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz]])
 
@@ -339,13 +343,13 @@ def printx(x, fix, atmo, g, PW):
     print("p={0:0.4f}\xb0/s q={1:0.4f}\xb0/s r={2:0.4f}\xb0/s".format(*pqr))
     print("da={0:0.2f}\xb0, de= {1:0.2f}\xb0".format(da,de))
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[2] * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[3] * g.PosiEng
 
     if g.IsPropWing:
         if V <= g.VelFlap:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, beta, x[1], V, x[2])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, beta, x[1], V, x[3])
         else:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, beta, x[1], V, x[2])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, beta, x[1], V, x[3])
 
     if g.nofin==False:
         print("dr = {0:0.2f}\xb0".format(x[8]/math.pi*180))

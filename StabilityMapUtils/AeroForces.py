@@ -177,7 +177,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
             if len(CLCl)>2 and g.IsPropWingDrag:
                 # Drag is computed by patterson, add contribution of other variables (than alpha and dx)
-                Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]]) # add alpha=0 coefficients  #Need to revise if CD0T must be here or is counted in Patterson
+                Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]]) # add alpha=0 coefficients
                 Moment = M+np.array([CLCl[1], g.Cm0 + g.Cm0_fl, CLCl[4]])
 
 
@@ -189,7 +189,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
         else:
             CLCl = PropWing.CalcCoef(Tc, V/a_sound, atmo, x[0], dail, 0, g, beta, p, V, r)
             # by default lift and drag are computed here
-            Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]]) # add alpha=0 coefficients      #Need to revise if CD0T must be here or is counted in Patterson
+            Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]]) # add alpha=0 coefficients
             # add roll effect
             Moment = M+np.array([CLCl[1], g.Cm0, CLCl[4]])
     else:
@@ -223,12 +223,177 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-
 def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
-    """ Function to compute aerodynamic forces in the velocity frame (aero frame)
-    for the DEP configuration. The propulsion force and moments are not computed here
-    Since V is fixed, Coef Matrix must be calculated before
-    Can handle DEP, with and without rudder, 2 or more engines"""
+    """ Function to compute longitudinal stability issues regarding the influence on the horizontal tail
+    when there is interaction. To compute for the slipstream velocity and down wash and see the influence on
+    the horizontal tail.
+
+    Normally
+    Cm_aero = Cm0 + Cm_alpha * alpha + Cm_q * q + Cm_de * de + Cm_u * u + Cm_d(alfa) * d(alfa) + Cm_d(de) * d(de)
+
+    Propulsion moments are already accounted in the equation modulus.
+
+    Cm_u = 0 as M is regime is always incompressible
+
+    Cm_q is calculated in OpenVSP, more about how to calculate it in Page 345
+
+    Cm_delta_e Page 345
+
+    Cm_de
+
+    Cm_d(de)   Page 345
+
+    Cm_d(alfa) ----> Teoría del retardo de estela
+
+
+
+
+    Para proceder vamos a:
+
+    Calcular el momento aerodinamico alrededor del centro aerodinamico conjunto ala-fuselaje. Este momento NO depende
+    del angulo de ataque. Simulacion de OpenVSP con el ala y el fuselaje a 0 grados.
+
+    Calcular el momento aerodinamico alrededor del centro aerodinamico de la cola horizontal. Este momento NO depende
+    del angulo de ataque. Simulacion de OpenVSP con la cola horizontal a 0 grados.
+
+
+
+    Luego habra que calcular momentos de la sustentacion y la resistencia en el conjunto ala fuselaje
+        Para ello:
+                    Sustentacion en el cjto ala fuselaje ------>  (Lo tienes)
+
+                    Resistencia en el cjto ala fuselaje -------> (lo tienes aunque hay que adaptarlo para que no
+                    cuente solo la del aumento de presion dinamica en la parasita)
+
+                    Centro aerodinamico en el cjto ala fuselaje. El fuselaje casi no sustenta, asi que se puede
+                    considerar que sera el mismo que el del ala. Los tienes calculados, sino de todas formas OpenVSP deberia
+                    dartelo
+
+                    Calcular la sustentacion y la resistencia en el estabilizador horizontal.
+                            Para ello : Necesitas un CL0 -----> de OpenVSP
+                                        Necesitas un Cl_alfa -----> de OpenVSP
+                                        Necesitas un angulo de ataque
+                                        Necesitas una velocidad en la cola
+
+                    Centro aerodinamico del estabilizador horizontal
+
+                    Teoria para el calculo de la deflexion de estela
+
+                    Teoria para el calculo de la presion dinamica en la cola.
+
+
+    Y después calculamos directamente todo el momento aerodinamico EN EJES CUERPO Y LO CAMBIAMOS A EJES VELOCIDAD!! como:
+
+    M = Cmac_wb + Cmac_HT + cg-ca ^ CL + cg-ca ^ CD + cg-caHT ^ CL_HT + cg-caHT ^ CD_HT = 0
+
+        Si descompones este momento, habra elementos que:
+
+           Dependan de alfa: Formaran Cm_alpha
+           Dependan de nada: formaran Cm0
+           Dependan de delta_e: Lo incluimos
+           Dependeran de q:  Lo incluimos?
+           Dependeran de d(alfa): Lo incluimos?  Con toeria del retardo
+
+
+
+
+        cg-ca = SM
+
+        cg-caHT = g.lv
+
+        za =
+
+        L_HT =    ( -0.0068 + 0.7798 *   ALPHA_HT   )  * (PRESION DINAMICA COLA)  /  (PRESION DINAMICA AVION)
+
+        D_HT =    ( (POLAR) * ALPHA _HT  )   * (PRESION DINAMICA COLA)  /  (PRESION DINAMICA AVION)
+
+
+
+
+
+
+
+    """
+
+
+    """
+    ATR
+    xcg: 12.41 measured from tip of aircraft, in OpenVSP. 
+        Thesis Hamburgo says Xcg = 11.5586, and allowable Xcg between 0.14 and 0.27 CMAC 
+        ATR72-500 manual says Xcg = (11.4743-12.096). Maybe we should change OpenVSP value. And also forward the wing
+        to 11.242
+         
+    Xlew: distance from tip of aircraft to leading edge of the wing in the root. In OpenVSP is 11.38 m.
+          In ATR72-600 measured manually, this distance is of 11.242 meters. It appears MAC match with the
+          chord in the wing root. 
+    
+    CMAC: Mean aerodynamic chord length. ATR72-500 manual says 2.303 . OpenVSP says 2.324481
+    
+    XLEMAC: Distance from tip of aircraft to leading edge of MAC. In ATR72-500 (this is an ATR72-600)
+           is 11.24. So the center of gravity is around 10 - 39% of MAC, this is, from the tip, 11.4743 to 12.14217 m 
+    
+    
+    
+    NP: Neutral Point.  For the wing leading edge in the root at 11.38 m OpenVSP calculates it in 12.8213492 m 
+       Its more backwards as there is an horizontal stabilizer.
+    
+        
+        
+    epsilon_0: 
+    epsilon_alpha : Hamburg project does calculate it.
+    
+    
+    In Development of a new methodology for the prediction of aircraft fuselage aerodynamic characteristics, Vincenzo
+    Cusati, he calculated, just for the fuselage of ATR72, several coefficients, you can have it also for other things
+    CD0_fuselage = 0.0085
+    CM (α=0) = −0.0832
+    CMα = 0.0222
+    
+    
+    
+    c.dg. = 11.75
+    c.dg.s without horizontal tail 11.571
+    zcdg=1.315
+    zdg without horizontal tail 1.262
+    """
+
+
+
+
+
+    """
+    ATR results:
+    
+    
+    Without horizontal tail, 70m/s, Mach=0.2058 , alpha=0, ailerons,rudder, elevators ... = 0
+    XCG=11.571
+    
+    Cm0 wingbody:  -0.171170
+    CL0 wingbody:  0.544738 this gives a moment
+    CD0 wingbody:  0.024993 this gives a moment
+    
+    Just horizontal tail
+    Cm0 = Cmo:                -0.001341
+    CL0 =  CLo:               -0.006814 This gives a moment, big one
+    CD0 =  CDo:                0.001353 a bit more this gives a moment
+    
+    VECTOR:   XCG -XCAWINGBODY
+    VECTOR:   XCG -XCAHORIZONTAL TAIL
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    """
+
+
+    # From OpenVSP
+
 
     rho = atmo[1]
     a_sound = atmo[0]
@@ -263,7 +428,9 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-    g.SM_CA_wingfuselage =  (CoefMatrix[4,0] + g.aht*g.Hor_tail_coef_vol *g.eta_downwash)/ (CoefMatrix[2,0]-g.aht)      #it bothers me that if you calculate the CA_wingbody does not really match with geometry,
+    g.SM_CA_wingfuselage =  (CoefMatrix[4,0] + g.aht*g.Hor_tail_coef_vol *g.eta_downwash)/ (CoefMatrix[2,0]-g.aht)
+
+    #it bothers me that if you calculate the CA_wingbody does not really match with geometry,
     #maybe because center of gravity is not well stimated? IN ATR for having a good value for
     #CA_wingbody, center of gravity should be around 11.4 m, is 12.41 now. Anyway calculus of
     # Cm alpha only cares about static margin
@@ -272,13 +439,16 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     #Cl_alpha with interaction calculus
     alpha_1 = 0 * np.pi/180
     alpha_2 = 2 * np.pi/180
-    CL_alpha_interaction = (   (PropWing.CalcCoef(Tc,V/a_sound, atmo, alpha_2,dail,g.FlapDefl,g,beta,p,V,r)[0] + g.aht*alpha_2 ) - (PropWing.CalcCoef(Tc,V/a_sound, atmo, alpha_1,dail,g.FlapDefl,g,beta,p,V,r)[0] + g.aht*alpha_1 ) )/ (alpha_2-alpha_1)
+    CL_alpha_interaction = ((PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha_2, dail, g.FlapDefl, g, beta, p, V, r)[0] + g.aht*alpha_2) - (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha_1, dail, g.FlapDefl, g,beta, p, V, r)[0] + g.aht*alpha_1)) / (alpha_2-alpha_1)
 
 
     #CALCULUS OF NEW CM_ALPHA_AERODYNAMIC
 
     Cm_alpha_interaction = (1 + ((CL_alpha_interaction - CoefMatrix[2,0]) * g.SM_CA_wingfuselage)/CoefMatrix[4,0]) * CoefMatrix[4,0]
-    #this formula is valis supossing that downwash, c.gravity and tail-wing pressure ratio does not change when implementing DEP
+    #this formula is valid supossing that downwash, c.gravity and tail-wing pressure ratio does not change when implementing DEP
+
+
+
 
 
     return Cm_alpha_interaction

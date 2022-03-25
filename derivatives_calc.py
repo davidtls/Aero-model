@@ -72,7 +72,7 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
 
      elif g.hangar['aircraft']=='DECOL':
 
-        limfix=( (21,26),(-5/180*math.pi,5/180*math.pi),(-5/180*math.pi,5/180*math.pi),(-0.2,0.2) )
+        limfix = ( (21,26),(-5/180*math.pi,5/180*math.pi),(-5/180*math.pi,5/180*math.pi),(-0.2,0.2) )
 
 
 
@@ -80,12 +80,12 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 
-     bnds_eng=((ThrottleMin,ThrottleMax), (ThrottleMin,ThrottleMax))
+     bnds_eng = ((ThrottleMin,ThrottleMax), (ThrottleMin,ThrottleMax))
 
      for i in range(int(g.N_eng/2)):
-         bnds2=bnds2+bnds_eng
+         bnds2 = bnds2+bnds_eng
 
-     bnds2=bnds2+limfix
+     bnds2 = bnds2+limfix
 
 
 
@@ -96,7 +96,7 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
      COEF_MATRIX = np.zeros( (number_points,6,len(x)) )
-     VAR_MATRIX=np.zeros((number_points,len(x)))
+     VAR_MATRIX = np.zeros((number_points,len(x)))
 
 
 
@@ -125,8 +125,8 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 
-     Int_list_1=[]
-     Int_list_3=[]
+     Int_list_1 = []
+     Int_list_3 = []
      Coef_Dev_Interpolation = []
      Coef_Dev_Interpolation_2 = []
 
@@ -153,8 +153,8 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 
-          Int_list_2=list(Int_list_1)
-          Int_list_4=list(Int_list_3)
+          Int_list_2 = list(Int_list_1)
+          Int_list_4 = list(Int_list_3)
           Coef_Dev_Interpolation.append(Int_list_2)
           Coef_Dev_Interpolation_2.append(Int_list_4)
           Int_list_1.clear()
@@ -164,7 +164,7 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 
-     plt.plot(VAR_MATRIX[:,0], COEF_MATRIX[:,2,0])
+     plt.plot(VAR_MATRIX[:, 0], COEF_MATRIX[:, 2, 0])
 
 
 
@@ -182,12 +182,12 @@ def aero_coefficients(x, fix, CoefMatrix, atmo, g, PropWing):
      #For adimensionalizing derivatives with respect to p,q,r,V
 
      b1 = [[Aero_Derivatives[x][y] for y in range(len(Aero_Derivatives[0]))] for x in range(len(Aero_Derivatives))]
-     Aero_Derivatives_adim=np.asarray(b1)
+     Aero_Derivatives_adim = np.asarray(b1)
 
-     Aero_Derivatives_adim[1,:] = Aero_Derivatives_adim[1,:]*(2*fix[0]/g.b)
-     Aero_Derivatives_adim[2,:] = Aero_Derivatives_adim[2,:]*(2*fix[0]/g.c)
-     Aero_Derivatives_adim[3,:] = Aero_Derivatives_adim[3,:]*(2*fix[0]/g.b)
-     Aero_Derivatives_adim[-4,:] = Aero_Derivatives_adim[-4,:] * (fix[0])
+     Aero_Derivatives_adim[1, :] = Aero_Derivatives_adim[1,:]*(2*fix[0]/g.b)
+     Aero_Derivatives_adim[2, :] = Aero_Derivatives_adim[2,:]*(2*fix[0]/g.c)
+     Aero_Derivatives_adim[3, :] = Aero_Derivatives_adim[3,:]*(2*fix[0]/g.b)
+     Aero_Derivatives_adim[-4, :] = Aero_Derivatives_adim[-4,:] * (fix[0])
 
 
 
@@ -271,10 +271,10 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing):
     Coefs=np.zeros(len(F))
 
     for i in range(len(F)):
-        if i==0 or i==1 or i==2:
+        if i == 0 or i == 1 or i == 2:
             Coefs[i] = F[i] / (0.5 * rho * V**2 * g.S)
 
-        elif i==4:
+        elif i == 4:
             Coefs[i] = F[i] / (0.5 * rho * V**2 * g.S * g.c)
 
         else:

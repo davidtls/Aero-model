@@ -249,8 +249,8 @@ class PropWing:
         
         beta=np.zeros(len(LocalChord))
         for i in range(len(beta)):
-            Lratio = a.xp/LocalChord[i]                                                                                 #xp is the radio of the propeller, Dp/2
-            Rratio = a.Dp/(2*LocalChord[i])
+            Lratio = a.xp/LocalChord[i]                                                                                 #xp is distance between propeller and leading edge
+            Rratio = a.Dp/(2*LocalChord[i])                                                                             #Dp is the radio of the propeller
             if SectMu[i] != 0:
                 X = np.array([1, Lratio, Lratio**2, Lratio*Mu[int(SectMu[i])-1], Mu[int(SectMu[i])-1], Mu[int(SectMu[i])-1]**2])
             else:
@@ -298,9 +298,9 @@ class PropWing:
 
         tempCL = np.sum(SortedCoef['Cl'] * SortedCoef['Area'] * Velocity**2) / (plane.S * V**2)
 
-        tempCdWash = np.sum(SortedCoef['Area']*SortedCoef['Cdw']*Velocity**2)/(plane.S*V**2)
+        tempCdWash = np.sum(SortedCoef['Area'] * SortedCoef['Cdw'] * Velocity**2) / (plane.S * V ** 2)
 
-        tempCd0 = np.sum(SortedCoef['Area']*SortedCoef['Cd0']*Velocity**2)/(plane.S*V**2)
+        tempCd0 = np.sum(SortedCoef['Area'] * SortedCoef['Cd0'] * Velocity**2) / (plane.S * V ** 2)
 
 
 
@@ -442,12 +442,16 @@ class PropWing:
 
     def PlotDist(self, dx, Mach, atmo, aoa, dail, dfl, plane, IfSave, beta, p, V, r):
         self.PlotDrag = True  # only here for accompanying drag distribution
-        data = self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r)
+        data = self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r)                                   #No es dx realmente, es Tc
         Dist = self.ReOrganiseLift(data)
         self.Coef = self.SumDistributedCoef(data, plane, beta, p, V, r)
+
+        Velocity =  V * (     np.cos((-np.sign(Dist['Yposi'])) * beta  + plane.wingsweep)) - r * Dist['Yposi']
+        CL_corrected = (Dist['Cl'] * Velocity**2) / (V**2)
+
         self.PlotDrag = False
         plt.figure()                                                                                                    #  Create a new figure, or activate an existing figure.
-        plt.plot(Dist['Yposi'], Dist['Cl'], linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(dx[0]))       #  Plot y versus x as lines and/or markers.
+        plt.plot(Dist['Yposi'], CL_corrected, linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(dx[0]))     #  Plot y versus x as lines and/or markers.
         ax = plt.gca()                                                                                                  #  Get the current Axes.
         ax.set_xlabel('Y (m)')                                                                                          #  Writes label for an axe
         ax.set_ylabel('Local $C_L$')
@@ -464,7 +468,13 @@ class PropWing:
         ax1.grid()
         fig1.tight_layout()
 
-        plt.show(block=True)   # added
+
+
+
+
+
+
+        plt.show(block=True)   # added to plot correctly
 
         if IfSave:
             plt.savefig('./CurrentLiftRepartition.pdf')
@@ -513,33 +523,34 @@ class PropWing:
 
         av_alpha_0 = np.mean(alpha0w)
         V_vect = np.zeros(len(Tc)) 
-        T=np.zeros(len(Tc))
+        T = np.zeros(len(Tc))
          
-        V_vect= V * (     np.cos((-np.sign(  plane.PosiEng  )) * beta  + plane.wingsweep)) - r *  plane.PosiEng
-        T=Tc *(2 * rho * V **2 * plane.Sp )
+        V_vect = V * (np.cos((-np.sign(plane.PosiEng)) * beta + plane.wingsweep)) - r * plane.PosiEng
+        Velocity =  V * (     np.cos((-np.sign(NormCl[:, 0])) * beta  + plane.wingsweep)) - r * NormCl[:, 0]
+        T = Tc * (2 * rho * V ** 2 * plane.Sp)
 
 
 
         for i in range(len(Tc)):
-            if Tc[i]==0:
+            if Tc[i] == 0:
                 #No Thrust, no need to solve the equation
-                myw[i]=0
+                myw[i] = 0
             else:
-                coef=[1,2*np.cos(aoa-av_alpha_0+plane.alpha_i+plane.ip),1,0,- (T[i]/ (2 * rho * plane.Sp * V_vect[i]**2)) ** 2  ]
-                roots=np.roots(coef)
+                coef = [1, 2*np.cos(aoa-av_alpha_0+plane.alpha_i+plane.ip), 1, 0, - (T[i] / (2 * rho * plane.Sp * V_vect[i]**2)) ** 2]
+                roots = np.roots(coef)
                 #get the real positive root
                 for j in range(len(roots)):
-                    if np.real(roots[j])>0:
-                        myw[i]=np.real(roots[j])
+                    if np.real(roots[j]) > 0:
+                        myw[i] = np.real(roots[j])
             # test the negative thrust effects by simply setting negative roots
-            if Tc[i]<0:
-                self.mu[i]=-2*myw[i]
+            if Tc[i] < 0:
+                self.mu[i] = -2*myw[i]
             else:
-                self.mu[i]=2*myw[i]
+                self.mu[i] = 2*myw[i]
 
 
 
-
+             #be careful, what you get is Vp /V_vect
 
 
 
@@ -578,17 +589,17 @@ class PropWing:
 
 
 
-        alpha_t=np.zeros(len(NormCl[:,0]))
+        alpha_t = np.zeros(len(NormCl[:, 0]))
 
-        for i in range(len(NormCl[:,0])):
+        for i in range(len(NormCl[:, 0])):
 
-            alpha_t[i] = - (alpha0w[i]) + aoa + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[i,0]) + p * NormCl[i,0]/V    #CHANGE V BY V_VECT OF 116 COMPONENTS
+            alpha_t[i] = - (alpha0w[i]) + aoa + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[i,0]) + p * NormCl[i,0]/Velocity[i]    #CHANGE V BY V_VECT OF 116 COMPONENTS
 
 
 
-        alpha_fl_t    = alpha_fl    - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/V
-        alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/V
-        alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/V
+        alpha_fl_t    = alpha_fl    - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/Velocity[:]
+        alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/Velocity[:]
+        alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/Velocity[:]
 
         #corresponding alpha max, assume aileron stall angle is alpha_t_max:
 #        alpha_t_max = plane.alpha_max + alpha0w

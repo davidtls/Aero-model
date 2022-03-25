@@ -23,23 +23,23 @@ def X(x, CoefMatrix,Velocities,rho,g):
 #    g = arg[3]
 
 
-    con=np.array([80,0/180*math.pi,0,0,0,0,0,0,0,0,0,0])
-    if x[7]<-30/180*math.pi:
+    con = np.array([80, 0/180*math.pi, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    if x[7] < -30/180*math.pi:
         return np.ones(12)*1000-np.ones(12)*x[7]*1000
-    elif x[7]>30/180*math.pi:
+    elif x[7] > 30/180*math.pi:
         return np.ones(12)*1000+np.ones(12)*x[7]*1000
     
-    if x[-1]<0:
+    if x[-1] < 0:
         return np.ones(12)*1000-np.ones(12)*x[-1]*10000
-    elif x[-1]>1:
+    elif x[-1] > 1:
         return np.ones(12)*1000+np.ones(12)*x[-1]*1000
     
     # need to do some operation before computing the forces
-    V=math.sqrt(np.dot(x[0:3],x[0:3]))
-    sub_vect=np.array([math.atan(x[2]/x[0]), math.asin(x[1]/V)])
-    sub_vect=np.append(sub_vect,x[3:6])
+    V = math.sqrt(np.dot(x[0:3], x[0:3]))
+    sub_vect = np.array([math.atan(x[2]/x[0]), math.asin(x[1]/V)])
+    sub_vect = np.append(sub_vect, x[3:6])
     #(alpha, beta, p, q, r, da, dr, de, dx)
-    sub_vect=np.append(sub_vect,[x[-4],x[-2],x[-3],x[-1]])
+    sub_vect = np.append(sub_vect, [x[-4], x[-2], x[-3], x[-1]])
 
     
     F=AeroForces.CalcForces(V, sub_vect, CoefMatrix, Velocities, rho)
@@ -47,34 +47,34 @@ def X(x, CoefMatrix,Velocities,rho,g):
 #    print(F)
     #all input taken into account in force computation
     
-    vel_vec=x[0:3]
-    p=x[3]
-    q=x[4]
-    r=x[5]
-    xdot=-np.cross(np.array([p,q,r]),vel_vec) + 9.81*np.array([-math.sin(x[7]), math.cos(x[7])*math.sin(x[6]), math.cos(x[7])*math.cos(x[6])])+F[0:3]/g.m
+    vel_vec = x[0:3]
+    p = x[3]
+    q = x[4]
+    r = x[5]
+    xdot = -np.cross(np.array([p, q, r]), vel_vec) + 9.81*np.array([-math.sin(x[7]), math.cos(x[7])*math.sin(x[6]), math.cos(x[7])*math.cos(x[6])])+F[0:3]/g.m
 #    print(np.cross(np.array([p,q,r]),vel_vec))
-    I_inv=np.array([[g.Iz/g.Ix, 0, g.Ixz/g.Ix],
+    I_inv = np.array([[g.Iz/g.Ix, 0, g.Ixz/g.Ix],
     [0, 1/g.Iy*(g.Iz-g.Ixz**2/g.Ix), 0],
     [g.Ixz/g.Ix, 0, 1]])/(g.Iz-g.Ixz**2/g.Ix)
    
-    rot=np.array([p,q,r])
-    I=np.array([[g.Ix, 0, -g.Ixz],[0,g.Iy,0],[-g.Ixz,0,g.Iz]]) 
-    Mvect=F[3:6]-np.cross(rot,np.array([g.hp,0,0]))-np.cross(rot, np.dot(I,rot))
+    rot = np.array([p, q, r])
+    I = np.array([[g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz]])
+    Mvect = F[3:6]-np.cross(rot, np.array([g.hp, 0, 0]))-np.cross(rot, np.dot(I, rot))
     
-    Mdot=np.dot(I_inv,Mvect);
-    xdot=np.append(xdot,Mdot)
+    Mdot = np.dot(I_inv, Mvect);
+    xdot = np.append(xdot, Mdot)
     
-    xadd=np.empty((0,6))
-    xadd=V-con[0]
-    xadd=np.append(xadd, [math.asin(x[1]/V)-con[1]])
-    xadd=np.append(xadd, [x[3:6]-con[2:5]])
-    xadd=np.append(xadd, [x[6]-con[5]])
+    xadd = np.empty((0, 6))
+    xadd = V-con[0]
+    xadd = np.append(xadd, [math.asin(x[1]/V)-con[1]])
+    xadd = np.append(xadd, [x[3:6]-con[2:5]])
+    xadd = np.append(xadd, [x[6]-con[5]])
 #    print("xadd:")
 #    print(xadd)
 #    print("xdot:")
 #    print(xdot)
 #    
-    xreturn=np.append([xdot],[xadd])
+    xreturn = np.append([xdot], [xadd])
     
     return xreturn
 
@@ -95,25 +95,25 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     rho = atmo[1]
 
     # --- Now prepare variables for equations ---
-    V=fix[0]
-    alpha=x[0]
-    beta=fix[1]
-    gamma=fix[2]
-    omega=fix[-1]
-    p=x[1]
-    q=x[2]
-    r=x[3]
-    phi=x[4]
-    theta=x[5]
-    I=np.array([ [g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz] ])
+    V = fix[0]
+    alpha = x[0]
+    beta = fix[1]
+    gamma = fix[2]
+    omega = fix[-1]
+    p = x[1]
+    q = x[2]
+    r = x[3]
+    phi = x[4]
+    theta = x[5]
+    I = np.array([[g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz]])
     
     # --- Compute aerodynamic forces ---
     #here subvector  must be : (alpha, beta, p, q, r, da, de,dr)
-    sub_vect=np.array([alpha,beta,p,q,r])
-    if g.nofin==False:
-        sub_vect=np.append(sub_vect,[x[6],x[7],x[8]]) # rudder is allowed
+    sub_vect = np.array([alpha, beta, p, q, r])
+    if g.nofin == False:
+        sub_vect = np.append(sub_vect, [x[6], x[7], x[8]])  # rudder is allowed
     else:
-        sub_vect=np.append(sub_vect,[x[6],x[7]]) # no fin allowed, default case
+        sub_vect = np.append(sub_vect, [x[6], x[7]])  # no fin allowed, default case
 
 
 
@@ -122,22 +122,22 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
 
 
-    Fx_vec=g.Thrust(x[-g.N_eng:],V_vect)
+    Fx_vec = g.Thrust(x[-g.N_eng:], V_vect)
     Fx = np.sum(Fx_vec)
 
 
 
 
-    Moment= np.zeros((g.N_eng,3))
+    Moment = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
-        a= np.array([ g.x_m , g.PosiEng[i] , g.z_m])
-        b=np.array([ Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip)  ,  0  ,  -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)  ])
-        Moment[i,:] = np.cross(a,b)
-    Thrust_moment_body_axis =np.array(( np.sum(Moment[:,0]), np.sum(Moment[:,1]) , np.sum(Moment[:,2]) ) )
+        a = np.array([g.x_m, g.PosiEng[i], g.z_m])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip), 0, -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)])
+        Moment[i, :] = np.cross(a, b)
+    Thrust_moment_body_axis = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
-    Body2Aero_matrix = np.array([   [np.cos(alpha)*np.cos(beta), np.sin(beta) , np.sin(alpha)*np.cos(beta) ], [ -np.cos(alpha)*np.sin(beta) , np.cos(beta) , -np.sin(beta)*np.sin(beta) ] , [ -np.sin(alpha), 0   , np.cos(alpha)  ]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
-    Trust_moment_aero_axis =    Body2Aero_matrix @  Thrust_moment_body_axis
+    Trust_moment_aero_axis = Body2Aero_matrix @ Thrust_moment_body_axis
 
     Mt = Trust_moment_aero_axis
 
@@ -148,7 +148,7 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     # convert thrust in Tc for patterson
     Tc = Fx_vec/(2*rho*g.Sp*V**2)                                                                                       #For adimension V, has already been used for calculating FXi
     
-    F=AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
+    F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
 
 
     #F gives out aerodinamical forces in aero axis: Drag, lateral force and lift and moments
@@ -159,10 +159,10 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 #     Now sum up the constraints:
-    sinbank=np.sin(theta)*np.cos(alpha)*np.sin(beta) + np.cos(beta)*np.cos(theta)*np.sin(phi)-np.sin(alpha)*np.sin(beta)*np.cos(theta)*np.cos(phi)
-    cosbank=np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi) 
+    sinbank = np.sin(theta)*np.cos(alpha)*np.sin(beta) + np.cos(beta)*np.cos(theta)*np.sin(phi)-np.sin(alpha)*np.sin(beta)*np.cos(theta)*np.cos(phi)
+    cosbank = np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi)
     
-    A=np.zeros(10+g.inop)
+    A = np.zeros(10+g.inop)
     """
     A created with 10 + number of inoperative engines
     
@@ -177,26 +177,26 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     A8 = gamma
     A9 = Omega
     """
-    A[0]=-9.81*np.sin(gamma)+F[0]/g.m+Fx*np.cos(alpha+g.alpha_i+g.alpha_0+g.ip)*np.cos(beta)/g.m
-    A[1]=(p*np.sin(alpha) - r*np.cos(alpha))+g.m*9.81*sinbank/(g.m*V) + F[1]/(g.m*V)-Fx*np.cos(alpha)*np.sin(beta)/(g.m*V)
-    A[2]=-(np.sin(beta)*(p*np.cos(alpha)+r*np.sin(alpha))-q*np.cos(beta))/np.cos(beta)+ 9.81*cosbank/(V*np.cos(beta)) + F[2]/(g.m*V*np.cos(beta))-Fx*np.sin(alpha+g.alpha_i+g.alpha_0+g.ip)/(g.m*V*np.cos(beta))
-    A[3:6]=np.dot(inv(I), np.array([Mt[0],Mt[1],Mt[2]])+F[3:6]-np.cross(np.array([p,q,r]),np.dot(I,np.array([p,q,r]))))
-    A[6]=p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta)
-    A[7]=q*math.cos(phi) -r*math.sin(phi)
-    A[8]=-np.sin(gamma)+np.cos(alpha)*np.cos(beta)*np.sin(theta)-np.sin(beta)*np.sin(phi)*np.cos(theta)-np.sin(alpha)*np.cos(beta)*np.cos(phi)*np.cos(theta)
-    A[9]=-omega + (q*np.sin(phi)+r*np.cos(phi))/np.cos(theta)
+    A[0] = -9.81*np.sin(gamma)+F[0]/g.m+Fx*np.cos(alpha+g.alpha_i+g.alpha_0+g.ip)*np.cos(beta)/g.m
+    A[1] = (p*np.sin(alpha) - r*np.cos(alpha))+g.m*9.81*sinbank/(g.m*V) + F[1]/(g.m*V)-Fx*np.cos(alpha)*np.sin(beta)/(g.m*V)
+    A[2] = -(np.sin(beta)*(p*np.cos(alpha)+r*np.sin(alpha))-q*np.cos(beta))/np.cos(beta) + 9.81*cosbank/(V*np.cos(beta)) + F[2]/(g.m*V*np.cos(beta))-Fx*np.sin(alpha+g.alpha_i+g.alpha_0+g.ip)/(g.m*V*np.cos(beta))
+    A[3:6] = np.dot(inv(I), np.array([Mt[0], Mt[1], Mt[2]])+F[3:6]-np.cross(np.array([p, q, r]), np.dot(I, np.array([p, q, r]))))
+    A[6] = p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta)
+    A[7] = q*math.cos(phi) - r * math.sin(phi)
+    A[8] = -np.sin(gamma)+np.cos(alpha)*np.cos(beta)*np.sin(theta)-np.sin(beta)*np.sin(phi)*np.cos(theta)-np.sin(alpha)*np.cos(beta)*np.cos(phi)*np.cos(theta)
+    A[9] = -omega + (q*np.sin(phi)+r*np.cos(phi))/np.cos(theta)
 
 
     
     for i in range(g.inop):
-        A[-1-i]=x[-1-i]                                                                                                 #The inoperative engine are the last ones (right wing). Its value is minimized (to zero)
+        A[-1-i] = x[-1-i]                                                                                                 #The inoperative engine are the last ones (right wing). Its value is minimized (to zero)
     
-    if g.hangar['version']=='original':                                                                                 #For obligating all the engines to have the same thrust
+    if g.hangar['version'] == 'original':                                                                                 #For obligating all the engines to have the same thrust
         #no DEP with original twin or N engines; all engines have the same thrust
-        D=np.copy(A)
+        D = np.copy(A)
         for i in range(g.N_eng-g.inop-1):
-            AAd=x[-g.N_eng]-x[-g.N_eng+i+1]
-            D=np.append(D,[AAd])
+            AAd = x[-g.N_eng]-x[-g.N_eng+i+1]
+            D = np.append(D, [AAd])
         return D
     else:
         return A
@@ -433,7 +433,7 @@ def Constraints_Beta(x, fix, CoefMatrix, atmo, g, PropWing):
 def fobjective(x, fix, rho, g):
     
 #Power=np.sum(x[-g.N_eng:])*2*g.P_var/float(g.N_eng)*rho/1.225/1000000
-    Power=np.sum(x[-g.N_eng:])*2*g.P_var/float(g.N_eng)/1000000
+    Power = np.sum(x[-g.N_eng:])*2*g.P_var/float(g.N_eng)/1000000
     
     return Power
 
@@ -445,7 +445,7 @@ def fobjectiveBeta(x, fix, CoefMatrix, rho, g):
     Dx = x[-g.N_eng:]
     MeanDx = np.mean(Dx)
     
-    BetaSideCoef = np.dot(CoefMatrix[1],x[0:7]) #side force
+    BetaSideCoef = np.dot(CoefMatrix[1], x[0:7])  # side force
     
     return abs(BetaSideCoef)
 
@@ -457,20 +457,20 @@ def fobjectivePropWingInterac(x, fix, rho, g):
     MeanDx = np.mean(Dx)
     stdDx = np.std(Dx)
 
-    if g.hangar['aircraft']=='ATR72':
+    if g.hangar['aircraft'] == 'ATR72':
          #    Power=np.sum(x[-g.N_eng:])*2*g.P_var/float(g.N_eng)*rho/1.225/1000000
          return MeanDx+stdDx
 
-    elif g.hangar['aircraft']=='DECOL':
+    elif g.hangar['aircraft'] == 'DECOL':
          return MeanDx*0.5+stdDx*0.5
 
 
 
     
-def fobjectiveBaseThetas(x,fix,rho,g):
+def fobjectiveBaseThetas(x, fix, rho, g):
 
 
-    if g.hangar['aircraft']=='ATR72':
+    if g.hangar['aircraft'] == 'ATR72':
          #    Dthetas=x[-int(g.N_eng/2):]
          #    Power = np.dot(g.BasisErf(g.BasisCenters),np.concatenate((np.flip(Dthetas,axis=0),Dthetas)))*g.P_a/(g.b/2)/g.NBasisCenter
          Power = g.BasisFunPowerTotal(x[-int(g.N_eng/2):])
@@ -485,12 +485,12 @@ def fobjectiveBaseThetas(x,fix,rho,g):
          #    return (np.mean(Dthetas)+stdThetas)/2
          return (Power/(g.P_a*2))
 
-    elif g.hangar['aircraft']=='DECOL':
+    elif g.hangar['aircraft'] == 'DECOL':
 
-         Dthetas=x[-int(g.N_eng/2):]
+         Dthetas = x[-int(g.N_eng/2):]
          #    stdThetas = np.std(Dthetas)
          VTsize = x[-int(g.N_eng/2)-1]
-         dx = [0,0]#x[-int(g.N_eng/2)*3-1:-int(g.N_eng/2)-1]
+         dx = [0, 0]#x[-int(g.N_eng/2)*3-1:-int(g.N_eng/2)-1]
          DeflRudder = 0#x[8]
 
          return (sum(Dthetas)/(g.N_eng/2)+VTsize+sum(dx)/g.N_eng+DeflRudder)/3
