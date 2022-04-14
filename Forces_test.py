@@ -32,19 +32,19 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
     # --- Now prepare variables for equations ---
     V = 72
-    alpha = 0.0665775709
+    alpha = 0.07891
     beta = 0
-    gamma = 0.13020895
+    gamma = 0
     omega = 0
     p = 0
     q = 0
     r = 0
     phi = -0.0000493944669
     theta = alpha+gamma
-    aileron = 0.00001
-    elevator = -0.02005
-    rudder = 0.00020
-    delta_x = 1
+    aileron = 0.00006
+    elevator = 0.01572
+    rudder = 0.00022
+    delta_x = 0.33001
 
     # Flaps : Flaps must be changed from main.
 

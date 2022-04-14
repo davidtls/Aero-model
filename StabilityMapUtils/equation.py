@@ -130,7 +130,7 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
 
     Moment = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
-        a = np.array([g.x_m, g.PosiEng[i], g.z_m])
+        a = np.array([g.x_cg - (g.lemac - g.xp), g.PosiEng[i], g.z_m])
         b = np.array([Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip), 0, -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)])
         Moment[i, :] = np.cross(a, b)
     Thrust_moment_body_axis = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
@@ -257,7 +257,7 @@ def Constraints_minimum_alpha(x, fix, CoefMatrix, atmo, g, PropWing):
 
     Moment= np.zeros((g.N_eng,3))
     for i in range(g.N_eng):
-        a= np.array([ g.x_m , g.PosiEng[i] , g.z_m])
+        a= np.array([g.x_cg - (g.lemac - g.xp) , g.PosiEng[i] , g.z_m])
         b=np.array([ Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip)  ,  0  ,  -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)  ])
         Moment[i,:] = np.cross(a,b)
     Thrust_moment_body_axis =np.array(( np.sum(Moment[:,0]), np.sum(Moment[:,1]) , np.sum(Moment[:,2]) ) )
@@ -376,7 +376,7 @@ def Constraints_Beta(x, fix, CoefMatrix, atmo, g, PropWing):
 
     Moment= np.zeros((g.N_eng,3))
     for i in range(g.N_eng):
-        a= np.array([ g.x_m , g.PosiEng[i] , g.z_m])
+        a= np.array([ g.x_cg - (g.lemac - g.xp) , g.PosiEng[i] , g.z_m])
         b=np.array([ Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip)  ,  0  ,  -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)  ])
         Moment[i,:] = np.cross(a,b)
     Thrust_moment_body_axis =np.array(( np.sum(Moment[:,0]), np.sum(Moment[:,1]) , np.sum(Moment[:,2]) ) )

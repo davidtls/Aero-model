@@ -75,8 +75,8 @@ if aircraft['model'] == 'DECOL':
 
     Neng = 8
     inop_eng = 0
-    FlapDefl = 0  # in degree standard flap deflection. Deflections allowed : 0 and 15  degree.
-                  # For flap deflection V_base < VelFlap
+    FlapDefl = 0 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 and 15  degree.
+                                # For flap deflection V_base < VelFlap
 
 
     g = DECOLgeometry.data(1, Neng, inop_eng, FlapDefl , r=0.113 / 2, rf=0.1865 / 2, zw=0.045,TipClearance=True, dprop=0.1)  # arg = Vtsize + options(Neng, inop_eng, vertical tail parameters)
@@ -134,7 +134,7 @@ elif aircraft['model'] == 'ATR':
 
     Neng = 12
     inop_eng = 0
-    FlapDefl = 0  # in degree standard flap deflection. Deflections allowed : 0 15 and 30 degree. Keep in mind they can be deflected for V<=71
+    FlapDefl = 30 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 15 and 30 degree. Keep in mind they can be deflected for V<=71
 
     g = ATRgeometry.data(1.0, Neng, inop_eng, FlapDefl, TipClearance=True, dprop=0.1,
                          dfus=0.1)  # arg = Vtsize + options(Neng, inop_eng, vertical tail parameters)

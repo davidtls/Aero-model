@@ -27,12 +27,18 @@ class data:
     # shared data between class go here:
 
 
+    # --- Mass ---
+    x_cg = 0.713  # (m)
+    m = 8.25  # Kg
+
+
     # --- Geometry --- 
     S = 0.5  # m^2
     b = 2  # m
     c = 0.25  # m    mean aerodynamic chord, used as reference
-    lv = 1.0765  # m distance from center of gravity to center of pressure of horizontal tail
+    lv = 1.809-x_cg  # m distance from center of gravity to center of pressure of horizontal tail
     zf = 0.165+0.085  # z position of the MAC of the fin, in reality a suitable height
+    lemac = 0.610124  # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
     fswept = 0/180*math.pi    # swept angle of vertical tail
     ftaper = 1.0                # Fin taper ratio, taper ratio of VT
     fAR = 1.8                   # Fin aspect ratio, aspect ratio of VT
@@ -42,6 +48,7 @@ class data:
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 0.7552  Volume coef of Horizontal tail
     it = 2.1/180*np.pi             # Horizontal tail tilt angle
     taudr = 0.24  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
+    Var_xac_fus = -0.019914 # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselaje (without hor tail)
 
     wingsweep = 0  # radians,
     dihedral = 0
@@ -59,9 +66,6 @@ class data:
     AilChord = 0.25
 
 
-    # --- Mass ---
-    x_cg = 0.713  # (m)
-    m = 8.25  # Kg
 
 
     # Inertia measured with Fernando
@@ -85,15 +89,19 @@ class data:
     IsPropWingDrag=True
 
 
-    # --- Lever arms for engines ---
-    h_m = 0.05  # distance from leading edge to propeller. Propeller is forward
-    x_m = 1.08   # horizontal distance from center of gravity to engines
-    z_m = 0.025  # approximate vertical distance between engine and CG. Propellers is above
-
+    # --- Distances ---
+    z_m = 0.075  # IGUAL ES 0.075 approximate vertical distance between engine and CG. Propellers is above. Computed with OpenVSP
+    z_h_w = 0.025  # vertical distance from the horizontal tail 1/4 point to the propeller axis. Computed with OpenVSP
+    lh = 1.16575    # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
+    lh2 = 0.942  # Horizontal distance from the wing trailing edge to the horizontal tail leading edge. Computed with OpenVSP
+    K_e = 1.44   # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    c_ht = 0.145  # Average chord of the horizontal tail
+    var_eps = 1.5  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    cm_0_s = -0.0512  # zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
     # ---Unique coeff ---
     aht = 0.5448
-    epsi_dot = - 0.3  #  downwash at tail
+    aht2 = 0.7049       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
     #  Cm_de = -2 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     Cm_alpha_fus = 0.015*180/np.pi
 
@@ -123,6 +131,28 @@ class data:
     Cdc_fl_15 = 0.0905
 
 
+
+
+
+
+
+
+
+    # Down-Wash parameters
+
+    # No flaps
+    eps0_flaps0 = 2.274 * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
+    deps_dalpha_flaps0 = 0.281        # Derivative of downwash with respect to alpha, no flaps conf
+
+    # 15° flaps
+    eps0_flaps15 = 4.07 * np.pi/180   # Downwash at 0 angle of attack in 15° flaps configuration
+    deps_dalpha_flaps15 = 0.281       # Derivative of downwash with respect to alpha, 15° flaps conf
+
+ 
+
+
+
+
     #Airfoil characteristics
     Cd0_laminar = 0.01252 
     Cd0_turbulent = 0.01252
@@ -135,7 +165,6 @@ class data:
     alpha_0 = -2.41/180*np.pi  # update with vsp file
     
     
-
 
     
     # Input file name
@@ -268,17 +297,18 @@ class data:
         self.VTsize=VTsize
         
         self.SetEngineNumber(N_eng, inop_eng, TipClearance, dfus, dprop)
-                
-        self.Sv = Sv
-        self.SvBase = Sv
-        self.bv = bv
-        self.r = r
-        self.Av = bv**2/Sv
-        self.Sh = Sh
-        self.zw = zw
-        self.rf = rf
-        self.zh = zh
-        self.bvl = bv+r
+
+        # See Nicolosi 2017, Ciliberti 2017, and Ciliberti thesis 2012 for more info
+        self.Sv = Sv  # Vertical tail surface
+        self.SvBase = Sv  # Vertical tail surface
+        self.bv = bv  # Vertical tail wingspan
+        self.r = r    # Fuselage thickness at the section where the aerodynamic centre of vertical tail is
+        self.Av = bv**2/Sv  # Vertical tail aspect ratio
+        self.Sh = Sh  # Horizontal tail surface
+        self.zw = zw  # wing position in fuselage. Height of wing root with respect to center of fuselage
+        self.rf = rf  # Fuselage max radius
+        self.zh = zh  # Position of the horizontal tail on the vertical tail to the fuselage centre line
+        self.bvl = bv+r  # Vertical tailplane span extended to the fuselage center line
         
         #Update drag
         self.Cdvt = 0.01374*Sv/self.S
@@ -308,13 +338,19 @@ class data:
              self.Cda = self.Cda_fl_0
              self.Cdb = self.Cdb_fl_0
              self.Cdc = self.Cdc_fl_0
-         elif FlapDefl == 15:
+
+             self.eps0 = self.eps0_flaps0
+             self.deps_dalpha = self.deps_dalpha_flaps0
+         elif FlapDefl == 15 * np.pi / 180:
              self.Cd0_fl = self.Cd0_fl_15
              self.CL0_fl = self.CL0_fl_15
              self.Cm0_fl = self.Cm0_fl_15
              self.Cda = self.Cda_fl_15
              self.Cdb = self.Cdb_fl_15
              self.Cdc = self.Cdc_fl_15
+
+             self.eps0 = self.eps0_flaps15
+             self.deps_dalpha = self.deps_dalpha_flaps15
          else:
              print("Chose an allowable value for flaps deflection, options are: No flaps (0°) or 15°")
              exit()
