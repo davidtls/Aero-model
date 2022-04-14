@@ -27,12 +27,18 @@ class data:
     # shared data between class go here:
 
 
+    # --- Mass ---
+    x_cg = 11.75  # (m)
+    m = 21500  # Kg (base 21.5T, MTOW : 23T, MLW : 22.35T    MZFW : 21T   MFL : 5T  MPL : 7.5T)
+
+
     # --- Geometry --- 
     S = 61.0  # m^2
     b = 27.05  # m
     c = 2.324481  # m Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
-    lv = 13.05  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
+    lv = 25.84 - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
     zf = 2  # z position of the MAC of the fin, in reality a suitable height
+    lemac = 11.38  # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
     fswept = 35/180*math.pi  # sweep angle of VT
     ftaper = 0.55  # taper ratio of VT
     fAR = 1.57  # aspect ratio of VT
@@ -40,8 +46,9 @@ class data:
     bh = 7.21  # in m the HT wingspan
     Sh = 11.13  # Horizontal tail surface
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 1.02     Volume coefficient of Horizontal tail
-    # it =                  # Horizontal tail tilt angle
+    it = -0.5 * np.pi/180                  # Horizontal tail tilt angle
     taudr = 0.30  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
+    Var_xac_fus = -0.6987 # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselaje (without hor tail)
 
     wingsweep = 0  # radians, in ATR there is not sweep
     dihedral = 0
@@ -59,9 +66,6 @@ class data:
     AilChord = 0.3
 
 
-    # --- Mass ---
-    x_cg = 12.41  # (m)
-    m = 21500  # Kg (base 21.5T, MTOW : 23T, MLW : 22.35T    MZFW : 21T   MFL : 5T  MPL : 7.5T)
 
 
     # Inertia terms are obtained from VSPaero for an homogeneous weight distribution
@@ -85,15 +89,19 @@ class data:
     IsPropWingDrag = True
 
 
-    # --- Lever arms for engines ---
-    h_m = 2.34     # distance from leading edge to propeller. Propeller is forward
-    x_m = 2.94     # distance from center of gravity to propellers. Propellers are forward
-    z_m = -0.304   # distance from center of gravity to propellers. Propellers are over
+    # --- Distances ---
+    z_m = -0.304   # distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
+    z_h_w = 3.371  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP
+    lh = 14.0783   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
+    lh2 = 11.95    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
+    K_e = 1.35     # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    c_ht = 1.54    # Average chord of the horizontal tail
+    var_eps = 1.8  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    cm_0_s = -0.0494 #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
-    
     # ---Unique coeff ---
-    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered
-    # epsi_dot =        # down-wash at tail
+    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered. Dimensioned with S.
+    aht2 = 0.7798       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
     # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     # Cm_alpha_fus =
 
@@ -104,7 +112,7 @@ class data:
     CD0T = 0.03383  # from OpenVSP, parasitic zero lift drag      THESIS HAMBURG 0.027403
     CD0T_wo_VT = 0.03112
     CL0 = 0.5155
-    CL0_HT = -0.0284    # doesnt lift, creates pitching positive moment
+    CL0_HT = -0.0273    # doesnt lift, creates pitching positive moment
     Cm0 = 0.150552
 
     Cda_fl_0 = 1.145
@@ -125,9 +133,24 @@ class data:
     CL0_fl_30 = 0.862201     # extra drag
     Cm0_fl_30 = 0.144949     # extra moment
 
-    Cda_fl_30 = 0.8979     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
+    Cda_fl_30 = 0.8979       # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
     Cdb_fl_30 = 0.4443
     Cdc_fl_30 = 0.0958
+
+
+    # Down-Wash parameters
+
+    # No flaps
+    eps0_flaps0 = 1.5 * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
+    deps_dalpha_flaps0 = 0.247      # Derivative of downwash with respect to alpha, no flaps conf
+
+    # 15° flaps
+    eps0_flaps15 = 2.411
+    deps_dalpha_flaps15 = 0.2387
+
+    # 30° flaps
+    eps0_flaps30 = 3.05 * np.pi/180
+    deps_dalpha_flaps30 = 0.262
 
 
     # Airfoil characteristics
@@ -143,10 +166,7 @@ class data:
     alpha_0 = -1.8/180*np.pi
 
 
-    
 
-
-    
     # Input file name
     Files = ['cldistribution', 'polar', 'flappolar', 'aileronpolar']  # best to replace the value
     alphaVSP = 5/180*np.pi
@@ -324,20 +344,29 @@ class data:
             self.Cda = self.Cda_fl_0
             self.Cdb = self.Cdb_fl_0
             self.Cdc = self.Cdc_fl_0
-        elif FlapDefl == 15:
+
+            self.eps0 = self.eps0_flaps0
+            self.deps_dalpha = self.deps_dalpha_flaps0
+        elif FlapDefl == 15 * np.pi / 180:
             self.Cd0_fl = self.Cd0_fl_15
             self.CL0_fl = self.CL0_fl_15
             self.Cm0_fl = self.Cm0_fl_15
             self.Cda = self.Cda_fl_15
             self.Cdb = self.Cdb_fl_15
             self.Cdc = self.Cdc_fl_15
-        elif FlapDefl == 30:
+
+            self.eps0 = self.eps0_flaps15
+            self.deps_dalpha = self.deps_dalpha_flaps15
+        elif FlapDefl == 30 * np.pi / 180:
             self.Cd0_fl = self.Cd0_fl_30
             self.CL0_fl = self.CL0_fl_30
             self.Cm0_fl = self.Cm0_fl_30
             self.Cda = self.Cda_fl_30
             self.Cdb = self.Cdb_fl_30
             self.Cdc = self.Cdc_fl_30
+
+            self.eps0 = self.eps0_flaps30
+            self.deps_dalpha = self.deps_dalpha_flaps30
         else:
             print("Chose an allowable value for flaps deflection, options are: No flaps, 15° or 30°")
             exit()
