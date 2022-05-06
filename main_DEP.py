@@ -53,7 +53,7 @@ Speed
 Altitude
 minimize_in_alpha
 Forces comparison deactivated
-g.hangar DEP or Original
+g.hangar DEPoriginal (different thrust) or original (same thrust)
 flaps
 """
 
@@ -83,7 +83,7 @@ if aircraft['model'] == 'DECOL':
 
     # --- Test case and steady parameters
     H_base = 0  # in m the altitude
-    V_base = 23.5  # 16.38
+    V_base = 15  # 16.38
     beta_base = 0 / 180 * math.pi
     gamma = 0 / 180 * np.pi  # math.atan(0/87.4)#/180*math.pi # 3% slope gradient # 6.88m/s vertical
     R = 0  # in meters the turn radius
@@ -118,7 +118,7 @@ if aircraft['model'] == 'DECOL':
     # ---- Optim parameter ------
     MaxIter = 100
     tolerance = 1e-3
-    method = 'trust-interior'
+    method = 'SLSQP'
 
 
 
@@ -134,7 +134,7 @@ elif aircraft['model'] == 'ATR':
 
     Neng = 12
     inop_eng = 0
-    FlapDefl = 30 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 15 and 30 degree. Keep in mind they can be deflected for V<=71
+    FlapDefl = 0 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 15 and 30 degree. Keep in mind they can be deflected for V<=71
 
     g = ATRgeometry.data(1.0, Neng, inop_eng, FlapDefl, TipClearance=True, dprop=0.1,
                          dfus=0.1)  # arg = Vtsize + options(Neng, inop_eng, vertical tail parameters)
@@ -154,7 +154,7 @@ elif aircraft['model'] == 'ATR':
     R = 000  # in meters the turn radius
     phimax = 5  # in degree the max bank angle authorized
     alphamax = 25  # in degree, stall bound for trimming
-    alphastall = 11.7  # 11.5 #that's for patterson
+    alphastall = 11.7  # that's for patterson
     deltaRmax = 30  # in degree
     ThrottleMax = 1  # max thrust level
     ThrottleMin = 1e-9  # min throttle, don't accept 0 thrust
@@ -162,7 +162,7 @@ elif aircraft['model'] == 'ATR':
 
 
     # --- dictionnary for type of aircraft studied. aircraft: ATR72, version : 'original', 'DEPoriginal', 'DEPnofin'
-    g.hangar = {'aircraft': 'ATR72', 'version': 'original'}
+    g.hangar = {'aircraft': 'ATR72', 'version': 'DEPoriginal'}
 
     g.VelFlap = 71  # in m/s the maximum velocity at which flap are deployed
     g.CL0_fl = g.CL0_fl  # / 2   # for take off in no-interaction divide by two
@@ -364,9 +364,11 @@ M_base=V_base/a_sound
 
 if g.hangar['aircraft']=='ATR72':
                Coef_base=AeroForces.CoefInterpol(M_base, CoefMatrix, Mach)
+               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:,1:], Mach)
 
 elif g.hangar['aircraft']=='DECOL':
                Coef_base=AeroForces.CoefInterpol(V_base, CoefMatrix, Velocities)
+               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:,1:], Velocities)
 
 
 
@@ -603,7 +605,7 @@ def printx(x, fix, atmo, g, PW):
 
 
 
-printx(k.x, fixtest, atmospher,g,PW)
+printx(k.x, fixtest, atmospher, g, PW)
 
 
 
@@ -641,28 +643,28 @@ print(constraints_calc)
 
 
 # ---- Compute jacobian -----
-if gojac==True:
-    jac=e.Jac_DEP(k.x,*diccons, 0.01)
+if gojac == True:
+    jac = e.Jac_DEP(k.x, *diccons, 0.01)
 
 
     #jacCol=[ V, beta, gamma, alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, delta_i]
     #jacLign = [V, beta, alpha, p,q,r,phi,theta)                                                                        element 2,3   (count starting on 1)     is      d beta /  d gamma
 
     #Add a lign to jac : gamma_dot = theta_dot-alpha_dot
-    jac = np.insert(jac,2,jac[7,:]-jac[2,:],axis=0)                                                                     #adds a lign for gamma
+    jac = np.insert(jac, 2, jac[7, :]-jac[2, :], axis=0)                                                                     #adds a lign for gamma
     
     #New jac lign : [V, beta, gamma, alpha, p, q, r, phi, theta]
-    LignLat=(1,4,6,7) #
-    ColLat=(1,4,6,7) # beta, p, r, phi, delta_a
-    LignLongi=(0,2,3,5) #(V, gamma, alpha, q)
-    ColLongi=(0,2,3,5) # (V, gamma, alpha, q)
-    TransiLat=jac[LignLat,:]
-    LatJac=TransiLat[:,ColLat]
-    TransiLongi=jac[LignLongi,:]
-    LongiJac=TransiLongi[:,ColLongi]
+    LignLat = (1, 4, 6, 7)  #
+    ColLat = (1, 4, 6, 7)  # beta, p, r, phi, delta_a
+    LignLongi = (0, 2, 3, 5)  # (V, gamma, alpha, q)
+    ColLongi = (0, 2, 3, 5)  # (V, gamma, alpha, q)
+    TransiLat = jac[LignLat, :]
+    LatJac = TransiLat[:, ColLat]
+    TransiLongi = jac[LignLongi, :]
+    LongiJac = TransiLongi[:, ColLongi]
 
 
-    Lateigvals=scipy.linalg.eigvals(LatJac)
+    Lateigvals = scipy.linalg.eigvals(LatJac)
     Longieigvals = scipy.linalg.eigvals(LongiJac)
 
 
@@ -679,9 +681,9 @@ if gojac==True:
 # --- display informations --- 
 print("\nConfiguration : "+g.hangar['version'])
 print("Vertical Tail size ratio : {0:0.2f}".format(g.VTsize))
-print("Lateral stability, Cy_beta = {0:0.2f}, Cn_beta = {1:0.3f}, Cn_r = {2:0.2f}".format(CoefMatrix[1,1],CoefMatrix[5,1],CoefMatrix[5,4]))
+print("Lateral stability, Cy_beta = {0:0.2f}, Cn_beta = {1:0.3f}, Cn_r = {2:0.2f}".format(CoefMatrix[1, 1], CoefMatrix[5, 1], CoefMatrix[5, 4]))
 print("Default conditions : Vel_base = {0:0.1f}m/s, Beta = {1:0.1f}°, gamma={2:0.1f}0, omega={3:0.2f}°/s, Altitude={4:0.0f}m".format(V_base, beta_base/math.pi*180, gamma/math.pi*180, omega/np.pi*180,H_base) )
-print("Number of engine : {0} \nNumber of inoperative engines : {1}".format(g.N_eng,g.inop))
+print("Number of engine : {0} \nNumber of inoperative engines : {1}".format(g.N_eng, g.inop))
 
 
 
@@ -702,7 +704,7 @@ Aero_Derivatives, Aero_Derivatives_adim = derivatives_calc.aero_coefficients(k.x
 
 Eigenvalues_info , Eigenvalues_info_adim = Eigenvalues_manually.Eig_info(Longieigvals,Lateigvals,g,fixtest)
 
-Eigenvalues = Eigenvalues_manually.Eigenvalues(Aero_Derivatives_adim,k.x,fixtest,atmospher,g,PW,CoefMatrix)
+Eigenvalues = Eigenvalues_manually.Eigenvalues(Aero_Derivatives_adim, k.x, fixtest, atmospher, g, PW, CoefMatrix)
 
 
 

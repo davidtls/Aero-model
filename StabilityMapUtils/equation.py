@@ -164,7 +164,7 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     
     A = np.zeros(10+g.inop)
     """
-    A created with 10 + number of inoperative engines
+    "A" created with 10 rows + number of inoperative engines
     
     A0 = x
     A1 = y
@@ -376,12 +376,12 @@ def Constraints_Beta(x, fix, CoefMatrix, atmo, g, PropWing):
 
     Moment= np.zeros((g.N_eng,3))
     for i in range(g.N_eng):
-        a= np.array([ g.x_cg - (g.lemac - g.xp) , g.PosiEng[i] , g.z_m])
-        b=np.array([ Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip)  ,  0  ,  -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)  ])
-        Moment[i,:] = np.cross(a,b)
-    Thrust_moment_body_axis =np.array(( np.sum(Moment[:,0]), np.sum(Moment[:,1]) , np.sum(Moment[:,2]) ) )
+        a = np.array([ g.x_cg - (g.lemac - g.xp) , g.PosiEng[i] , g.z_m])
+        b = np.array([ Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip)  ,  0  ,  -Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip) ])
+        Moment[i, :] = np.cross(a, b)
+    Thrust_moment_body_axis = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
-    Body2Aero_matrix = np.array([   [np.cos(alpha)*np.cos(beta), np.sin(beta) , np.sin(alpha)*np.cos(beta) ], [ -np.cos(alpha)*np.sin(beta) , np.cos(beta) , -np.sin(beta)*np.sin(beta) ] , [ -np.sin(alpha), 0   , np.cos(alpha)  ]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta) , np.sin(alpha)*np.cos(beta) ], [ -np.cos(alpha)*np.sin(beta) , np.cos(beta) , -np.sin(beta)*np.sin(beta) ] , [ -np.sin(alpha), 0   , np.cos(alpha)  ]])
 
     Trust_moment_aero_axis = Body2Aero_matrix @  Thrust_moment_body_axis
 
@@ -390,10 +390,10 @@ def Constraints_Beta(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 #     Now sum up the constraints:
-    sinbank=np.sin(theta)*np.cos(alpha)*np.sin(beta) + np.cos(beta)*np.cos(theta)*np.sin(phi)-np.sin(alpha)*np.sin(beta)*np.cos(theta)*np.cos(phi)
-    cosbank=np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi) 
+    sinbank = np.sin(theta)*np.cos(alpha)*np.sin(beta) + np.cos(beta)*np.cos(theta)*np.sin(phi)-np.sin(alpha)*np.sin(beta)*np.cos(theta)*np.cos(phi)
+    cosbank = np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi)
     
-    A=np.zeros(10+g.inop)
+    A = np.zeros(10+g.inop)
     """
     A0 = x
     A1 = y
@@ -406,24 +406,24 @@ def Constraints_Beta(x, fix, CoefMatrix, atmo, g, PropWing):
     A8 = gamma
     A9 = Omega
     """
-    A[0]=-9.81*np.sin(gamma)+F[0]/g.m+Fx*np.cos(alpha+g.alpha_i+g.alpha_0+g.ip)*np.cos(beta)/g.m
-    A[1]=(p*np.sin(alpha) - r * np.cos(alpha))+g.m*9.81*sinbank/(g.m*V) + F[1]/(g.m*V)-Fx*np.cos(alpha)*np.sin(beta)/(g.m * V)
-    A[2]=-(np.sin(beta)*(p*np.cos(alpha)+r*np.sin(alpha))-q*np.cos(beta))/np.cos(beta)+ 9.81*cosbank/(V*np.cos(beta)) + F[2]/(g.m*V*np.cos(beta))-Fx*np.sin(alpha+g.alpha_i+g.alpha_0+g.ip)/(g.m*V*np.cos(beta))
-    A[3:6]=np.dot(inv(I), np.array([Mt[0],Mt[1],Mt[2]])+F[3:6]-np.cross(np.array([p,q,r]),np.dot(I,np.array([p,q,r]))))
-    A[6]=p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta)
-    A[7]=q*math.cos(phi) - r * math.sin(phi)
-    A[8]=-np.sin(gamma)+np.cos(alpha)*np.cos(beta)*np.sin(theta)-np.sin(beta)*np.sin(phi)*np.cos(theta)-np.sin(alpha)*np.cos(beta)*np.cos(phi)*np.cos(theta)
-    A[9]=-omega + (q*np.sin(phi)+r*np.cos(phi))/np.cos(theta)
+    A[0] = -9.81*np.sin(gamma)+F[0]/g.m+Fx*np.cos(alpha+g.alpha_i+g.alpha_0+g.ip)*np.cos(beta)/g.m
+    A[1] = (p*np.sin(alpha) - r * np.cos(alpha))+g.m*9.81*sinbank/(g.m*V) + F[1]/(g.m*V)-Fx*np.cos(alpha)*np.sin(beta)/(g.m * V)
+    A[2] = -(np.sin(beta)*(p*np.cos(alpha)+r*np.sin(alpha))-q*np.cos(beta))/np.cos(beta) + 9.81*cosbank/(V*np.cos(beta)) + F[2]/(g.m*V*np.cos(beta))-Fx*np.sin(alpha+g.alpha_i+g.alpha_0+g.ip)/(g.m*V*np.cos(beta))
+    A[3:6] = np.dot(inv(I), np.array([Mt[0], Mt[1], Mt[2]])+F[3:6]-np.cross(np.array([p, q, r]), np.dot(I, np.array([p, q, r]))))
+    A[6] = p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta)
+    A[7] = q*math.cos(phi) - r * math.sin(phi)
+    A[8] = -np.sin(gamma)+np.cos(alpha)*np.cos(beta)*np.sin(theta)-np.sin(beta)*np.sin(phi)*np.cos(theta)-np.sin(alpha)*np.cos(beta)*np.cos(phi)*np.cos(theta)
+    A[9] = -omega + (q*np.sin(phi)+r*np.cos(phi))/np.cos(theta)
 
     for i in range(g.inop):
         A[-1-i]=x[-1-i]
 
-    if g.hangar['version']=='original':
+    if g.hangar['version'] == 'original':
         #no DEP with original twin or N engines; all engines have the same thrust
         D=np.copy(A)
         for i in range(g.N_eng-g.inop-1):
-            AAd=x[-g.N_eng]-x[-g.N_eng+i+1]
-            D=np.append(D,[AAd])
+            AAd = x[-g.N_eng]-x[-g.N_eng+i+1]
+            D = np.append(D, [AAd])
         return D
     else:
         return A

@@ -160,15 +160,17 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     F[2] = np.dot(CoefMatrix[2], xsym)                       # ( CL_ALFA*ALFA + CL_BETA*|BETA| + CL_P*P^ +  CL_Q*Q^ + CL_R*R^ + CL_DA*|DA| +  CL_DE*DE + CD_DR*|DR|)  !calculated again later if interaction
     M = np.dot(CoefMatrix[3:6, :], x)
 
-    DragQuad = F[0] + g.Cda*x[0]**2 + g.Cdb * x[0] + g.Cdc
+    DragQuad = F[0] + g.Cda*x[0]**2 + g.Cdb * x[0] + g.Cdc + (g.CD0T - g.Cdc_fl_0)    #  Last term for moving above the polar Cd0
 
-    g.Cm_alpha_aero_interaction = Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing)
+    Cm, CL_tail = Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing)       #  For the pitching moment calculus with Delft paper
 
     if g.IsPropWing:
 
-        CoefMatrix[4,0] = g.Cm_alpha_aero_interaction                                                                   #Use new CM_ALPHA
-        M = np.dot(CoefMatrix[3:6, :], x)                                                                               #Redo calculus with new Cm_alpha
-        F[2] = np.dot(CoefMatrix[2][1:], xsym[1:]) + g.aht*x[0]-g.CL0_HT                                                #F[2] Calculated without alpha: CL_BETA*BETA + CL_P*P + CL_Q*Q + CL_R*R + CL_DA*|DA| + CL_DE*DE + CL_DR*|DR|   )
+        CoefMatrix[3, 2] = CoefMatrix[3, 2] - g.Matrix_no_tail_terms[3, 2]
+        CoefMatrix[3, 4] = CoefMatrix[3, 4] - g.Matrix_no_tail_terms[3, 4]
+        M = np.dot(CoefMatrix[3:6, :], x)
+
+        F[2] = np.dot(CoefMatrix[2][1:], xsym[1:]) + CL_tail                                                #F[2] Calculated without alpha: CL_BETA*BETA + CL_P*P + CL_Q*Q + CL_R*R + CL_DA*|DA| + CL_DE*DE + CL_DR*|DR|   )
                                                                                                                         #Terms for horizontal tail added (alpha, and 0-alpha term) to modify x[0] and g.CL0_HT to take into account slisptream
         if V <= g.VelFlap:
 
@@ -200,7 +202,10 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
         else:
             Fbody = np.array([-DragQuad, F[1], -F[2]-g.CL0])  # add alpha=0 coefficients
             Moment = M+np.array([0, g.Cm0, 0])
- 
+
+
+    if g.IsPropWing:
+        Moment[1] = Cm
     g.TotalDrag = abs(Fbody[0])
     g.Lift = abs(Fbody[2])
     g.lift2drag = abs(Fbody[2]/Fbody[0])
@@ -223,7 +228,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
+def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
@@ -238,6 +243,9 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     r = x[4]
     alpha = x[0]
     CL_alpha_no_int = CoefMatrix[2, 0]
+    da = x[5]
+    de = x[6]
+    dr = x[7]
 
 
     Fx_vec = Tc * (2*rho*g.Sp*V**2)
@@ -266,37 +274,23 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
     #Cl_alpha with interaction calculus
-    alpha_1 = 0 * np.pi/180
-    alpha_2 = 2 * np.pi/180
-    CL_alpha_interaction = ((PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha_2, dail, g.FlapDefl, g, beta, p, V, r)[0] + g.aht*alpha_2) - (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha_1, dail, g.FlapDefl, g,beta, p, V, r)[0] + g.aht*alpha_1)) / (alpha_2-alpha_1)
-
+    CL_alpha_interaction = ((PropWing.CalcCoef(Tc, V/a_sound, atmo, 2 * np.pi/180, dail, g.FlapDefl, g, beta, p, V, r)[0] + g.aht*2*np.pi/180) - (PropWing.CalcCoef(Tc, V/a_sound, atmo, 0, dail, g.FlapDefl, g,beta, p, V, r)[0] + g.aht*0)) / ((2-0)*np.pi/180)
+    CL0_int = (PropWing.CalcCoef(Tc, V/a_sound, atmo, 0, dail, 0, g,beta, p, V, r)[0] + g.aht*0 + g.CL0_HT)
 
 
     g.Vef2Vinf_2 = PropWing.Augmented_velocity_wing(Tc, V/a_sound, atmo, x[0], dail, g.FlapDefl, g,beta,p,V,r)          #(V_ef/V_inf)^2  (is not vtail/Vinf , keep that in mind)
 
+
+    """
     g.eta_downwash = 0.858675
-    g.X_CA_wb = g.x_cg/g.c - ((CoefMatrix[4, 0] + g.aht*g.Hor_tail_coef_vol * 0.8) / (CoefMatrix[2, 0]-g.aht))   #--> Calculated so that downwash *ratio of dynamic pressures is 0.8
-    #deberia ser 11.242 + 0.25 * 2.3244 = 11.82 , para que eso pase g.x_cg debe ser 11.52 , pero claro, entonces cambiar cm-alfa , debe ser un proceso iterativo.
-
+    g.X_CA_wb = g.x_cg/g.c - ((CoefMatrix[4, 0] + g.aht*g.Hor_tail_coef_vol * 0.8) / (CoefMatrix[2, 0]-g.aht))  
     g.SM_CA_wingfuselage = (CoefMatrix[4, 0] + g.aht*g.Hor_tail_coef_vol * g.eta_downwash) / (CoefMatrix[2, 0]-g.aht)
-
-    #it bothers me that if you calculate the CA_wingbody does not really match with geometry,
-    #maybe because center of gravity is not well stimated? IN ATR for having a good value for
-    #CA_wingbody, center of gravity should be around 11.4 m, is 12.41 now. Anyway calculus of
-    # Cm alpha only cares about static margin
-
-
-
 
     #CALCULUS OF NEW CM_ALPHA_AERODYNAMIC
 
     Cm_alpha_interaction = (1 + ((CL_alpha_interaction - CoefMatrix[2, 0]) * g.SM_CA_wingfuselage)/CoefMatrix[4, 0]) * CoefMatrix[4, 0]
     #this formula is valid supossing that downwash, c.gravity and tail-wing pressure ratio does not change when implementing DEP
-
-
-
-
-
+    """
 
 
 
@@ -353,29 +347,26 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-    # TAIL-OFF PITCHING MOMENT
+    # TAIL-OFF PITCHING MOMENT!
 
-    """
-    Cm_alpha = 
-    Cm_beta = 
-    Cm_p = 
-    Cm_q = 
-    Cm_r =
-    Cm_de =
-    Cm_da =
-    Cm_dr =
-    """
+    Cm_0 = g.Cm0_wo_HT + g.Cm0_fl + g.Cm_alpha_wb*alpha + np.dot (CoefMatrix[4,1:8],x[1:8])
 
-    #Cm_0 = Cm0 + Cm_alpha*alpha + Cm_beta*beta + Cm_p*p +Cm_q*q + Cm_r*r
 
-    c_flaps = g.c * np.sqrt((1+g.FlChord*(np.cos(g.FlapDefl)-1))**2 + (g.FlChord*np.sin(g.FlapDefl))**2)
+
+
+    c_flaps = g.c * np.sqrt(((1-g.FlChord) + g.FlChord*np.cos(g.FlapDefl))**2 + (g.FlChord*np.sin(g.FlapDefl))**2)
 
     Cm_s_0 = g.N_eng * ((D_s * g.c)/g.S) * g.cm_0_s * ((g.Vef2Vinf_2*V/V)**2-1)
 
     Cm_s_df = (c_flaps/g.c)*(-0.25+0.32*g.FlChord / c_flaps) * (1+0.2*(1-np.sqrt(2) * np.sin(g.FlapDefl))) * g.CL0_fl
 
 
-    if g.FlapDefl <= 30*np.pi/180:
+
+    if g.FlapDefl == 0:
+
+        F=0
+
+    elif g.FlapDefl <= 30*np.pi/180:
 
        F = (0.5 * (g.FlapDefl*180/np.pi) / 30 + 0.25)*(c_flaps/g.c-1) + 0.05 * (g.FlapDefl*180/np.pi) / 30 + (g.Var_xac_fus / g.c) * (1-(g.FlapDefl*180/np.pi) / 30)
     else:
@@ -383,19 +374,11 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
        F = -0.75 * (c_flaps/g.c-1) - 0.05
 
 
-    Cm_s_alpha = F * g.CL0_fl
+    Cm_s_alpha = F * CL_alpha_interaction * alpha
 
 
 
-    Cm_tail_off = Cm_s_0 + Cm_s_df + Cm_s_alpha #+Cm_0
-
-
-
-
-
-
-
-
+    Cm_tail_off = Cm_s_0 + Cm_s_df + Cm_s_alpha +Cm_0 - (CL_alpha_interaction * alpha + g.CL0_fl + (CL0_int-g.CL0))*(g.lemac + 0.25*g.c - g.x_cg)
 
 
 
@@ -403,16 +386,13 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     Cm_tail = -(alpha + g.it - eps) * (g.aht2 * g.S/g.Sh) * dpratio * (g.Sh * g.lv)/(g.S * g.c)
 
 
+    Cm = Cm_tail_off + Cm_tail
 
 
 
+    # TAIL LIFT
 
-
-
-
-
-
-
+    CL_tail = g.aht2 * (alpha + g.it - eps) * dpratio
 
 
 
@@ -511,8 +491,6 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     """
 
 
-
-
     """
     ATR
     xcg: 12.41 measured from tip of aircraft, in OpenVSP. You need to change in the files
@@ -548,17 +526,19 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
         
        ATR
     
-          5.246845*((11.75-11.3743)/2.3244810)-(0.780797 * 60.8477 / 11.13)*(1-0.247779354)*1.04546596638*((11.13*14.09)/(60.8477*2.3244810)) = -2.87398203467
+          5.2458*((11.75-11.23)/2.3244810)-(0.780797 * 60.8477 / 11.13)*(1-0.247779354)*1.0435*((11.13*14.09)/(60.8477*2.3244810)) = -2.5415
+          
+          El valor dado por OpenVSP es 2.47605 asi que bien
 
   
           OPENVSP DA -2.69  LUEGO MUY MUY BIEN !!!
     
-          Cl_alpha_wingbody = 5.2468
+          Cl_alpha_wingbody = 5.2458
           x_cg = 11.75
-          x_ca_wb = 11.3743
+          x_ca_wb = 11.23
           CMA = 2.3244
           
-          nt * (1 - d_eps/d_alpha) = es el necesario para que 0.7808 sea 0.7141.  Como d_eps / d_alpha es 0.2477 podemos saber que nt = 1.04546
+          nt * (1 - d_eps/d_alpha) = es el necesario para que 0.7808 sea 0.7141.  Como d_eps / d_alpha es 0.2477 podemos saber que nt = 1.0435
           
           Vt (coef volumen) = Sh * lh  /  Sw * CMA   Sw = 60.8477  Sh = 11.13   lh = 25.84 - 11.75 = 14.09
           
@@ -577,8 +557,6 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     CMα = 0.0222
      
     """
-
-
 
 
     """
@@ -633,9 +611,6 @@ def Cm_alpha(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     """
 
-
-
-
-    return Cm_alpha_interaction
+    return Cm, CL_tail
 
 

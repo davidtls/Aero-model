@@ -48,7 +48,7 @@ class data:
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 0.7552  Volume coef of Horizontal tail
     it = 2.1/180*np.pi             # Horizontal tail tilt angle
     taudr = 0.24  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
-    Var_xac_fus = -0.019914 # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselaje (without hor tail)
+    Var_xac_fus = -0.019914  # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
 
     wingsweep = 0  # radians,
     dihedral = 0
@@ -97,11 +97,12 @@ class data:
     K_e = 1.44   # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     c_ht = 0.145  # Average chord of the horizontal tail
     var_eps = 1.5  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
-    cm_0_s = -0.0512  # zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
+    cm_0_s = -0.0512  #    +  (0.2792)*Var_xac_fus/c     zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
     # ---Unique coeff ---
     aht = 0.5448
     aht2 = 0.7049       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
+    Cm_alpha_wb = 1.228506  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
     #  Cm_de = -2 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     Cm_alpha_fus = 0.015*180/np.pi
 
@@ -112,9 +113,10 @@ class data:
     CD0T = 0.0636         # global one  extracted from flight not stab the file
     CDO_wo_VT = 0.0627
     CL0 = 0.44768
-    CL0_HT = -0.002489
+    CL0_HT = -0.002489  # Interpolated effective zero lift of horizontal tail (23.5 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
     Cm0 = 0.004684
-    CDMax90 = 1.25
+    Cm0_wo_HT = -0.056585  # Cm0 of aircraft less horizontal tail
+
 
     # Drag polar without patterson. Interpolated from VSP v26, updated VSPAERO
     Cda_fl_0 = 1.6372
@@ -129,6 +131,8 @@ class data:
     Cda_fl_15 = 1.4937      # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
     Cdb_fl_15 = 0.4327
     Cdc_fl_15 = 0.0905
+
+
 
 
 
