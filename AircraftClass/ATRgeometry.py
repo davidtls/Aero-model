@@ -38,7 +38,7 @@ class data:
     c = 2.324481  # m Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
     lv = 25.84 - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
     zf = 2  # z position of the MAC of the fin, in reality a suitable height
-    lemac = 11.38  # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
+    lemac = 11.24  # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
     fswept = 35/180*math.pi  # sweep angle of VT
     ftaper = 0.55  # taper ratio of VT
     fAR = 1.57  # aspect ratio of VT
@@ -48,7 +48,7 @@ class data:
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 1.02     Volume coefficient of Horizontal tail
     it = -0.5 * np.pi/180                  # Horizontal tail tilt angle
     taudr = 0.30  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
-    Var_xac_fus = -0.6987 # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselaje (without hor tail)
+    Var_xac_fus = -0.69    # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
 
     wingsweep = 0  # radians, in ATR there is not sweep
     dihedral = 0
@@ -90,18 +90,19 @@ class data:
 
 
     # --- Distances ---
-    z_m = -0.304   # distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
+    z_m = -0.304   # vertical distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
     z_h_w = 3.371  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP
-    lh = 14.0783   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
-    lh2 = 11.95    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
+    lh = 14.2183   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
+    lh2 = 12.09    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
     K_e = 1.35     # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     c_ht = 1.54    # Average chord of the horizontal tail
     var_eps = 1.8  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
-    cm_0_s = -0.0494 #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
+    cm_0_s = -0.0494 # +  (0.2941)*Var_xac_fus/c  #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
     # ---Unique coeff ---
-    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered. Dimensioned with S.
-    aht2 = 0.7798       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
+    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
+    aht2 = 0.78082       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
+    Cm_alpha_wb = 1.173310  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
     # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     # Cm_alpha_fus =
 
@@ -111,31 +112,34 @@ class data:
     # without flaps
     CD0T = 0.03383  # from OpenVSP, parasitic zero lift drag      THESIS HAMBURG 0.027403
     CD0T_wo_VT = 0.03112
-    CL0 = 0.5155
-    CL0_HT = -0.0273    # doesnt lift, creates pitching positive moment
-    Cm0 = 0.150552
+    CL0 = 0.516688      # Total CL0 including horizontal tail
+    CL0_HT = -0.0284    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
+    Cm0 = 0.035015
+    Cm0_wo_HT = -0.129536  # Cm0 of aircraft less horizontal tail
 
-    Cda_fl_0 = 1.145
+
+    # Drag polar without patterson. Interpolated from VSP v26, updated VSPAERO
+    Cda_fl_0 = 1.1458
     Cdb_fl_0 = 0.1891
     Cdc_fl_0 = 0.026
 
     # with flaps down 15°, coefficients and drag polar
-    Cd0_fl_15 = 0.030993      # extra drag
-    CL0_fl_15 = 0.500216      # extra lift
-    Cm0_fl_15 = 0.083884      # extra moment
+    Cd0_fl_15 = 0.030989      # extra drag
+    CL0_fl_15 = 0.500229      # extra lift
+    Cm0_fl_15 = -0.027008     # extra moment
 
-    Cda_fl_15 = 1.0322     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
-    Cdb_fl_15 = 0.3508
+    Cda_fl_15 = 1.034     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
+    Cdb_fl_15 = 0.3506
     Cdc_fl_15 = 0.057
 
     # with flaps down 30°
-    Cd0_fl_30 = 0.069767     # extra lift
-    CL0_fl_30 = 0.862201     # extra drag
-    Cm0_fl_30 = 0.144949     # extra moment
+    Cd0_fl_30 = 0.069758     # extra lift
+    CL0_fl_30 = 0.862223     # extra drag
+    Cm0_fl_30 = -0.046686    # extra moment
 
-    Cda_fl_30 = 0.8979       # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
-    Cdb_fl_30 = 0.4443
-    Cdc_fl_30 = 0.0958
+    Cda_fl_30 = 0.9197       # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
+    Cdb_fl_30 = 0.4424
+    Cdc_fl_30 = 0.0957
 
 
     # Down-Wash parameters
@@ -414,7 +418,9 @@ class data:
             VarPosi = (1, 2, 4)
             EffPosi = (1, 3, 5)
             NumEff = 6  # number of force equations
-#            print(VeDSC_Coef[2,2])
+
+
+
             for kk in range(len(EffPosi)):
                 #Manually change rudder coefficient by simple proportionality
                 #MVeDSC[EffPosi[kk]+i*NumEff,-1]=MVeDSC[EffPosi[kk]+i*NumEff,-1]*self.VTsize
