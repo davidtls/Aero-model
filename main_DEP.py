@@ -162,7 +162,7 @@ elif aircraft['model'] == 'ATR':
 
 
     # --- dictionnary for type of aircraft studied. aircraft: ATR72, version : 'original', 'DEPoriginal', 'DEPnofin'
-    g.hangar = {'aircraft': 'ATR72', 'version': 'DEPoriginal'}
+    g.hangar = {'aircraft': 'ATR72', 'version': 'original'}
 
     g.VelFlap = 71  # in m/s the maximum velocity at which flap are deployed
     g.CL0_fl = g.CL0_fl  # / 2   # for take off in no-interaction divide by two
@@ -216,9 +216,9 @@ mpl.rcParams["font.size"] = 16
 
 
 print("Engine position :")
-strout=""
+strout = ""
 for i in range(len(g.PosiEng)):
-    strout=strout+str(i+1)+" : "+"{:.3}".format(g.PosiEng[i])+"m, "
+    strout = strout+str(i+1)+" : "+"{:.3}".format(g.PosiEng[i])+"m, "
 print(strout)
 
 
@@ -242,8 +242,8 @@ g.DisplayPatterInfo = False
 gojac = True
 storeJac = False
 OutputMatlab = True
-goFinVariation= False
-FinRatioVec = np.linspace(0.1,1.0,10)
+goFinVariation = False
+FinRatioVec = np.linspace(0.1, 1.0, 10)
 CstSpan = False
 CstA = True
 
@@ -276,23 +276,21 @@ CstA = True
 # The velocities corresponds to key points of ATR flights and the ones at which
 # VSPaero computes the stability matrices
 
-if aircraft['model']=='ATR':
+if aircraft['model'] == 'ATR':
 
-
-
-       Velocities=( 70, 90 , 110  , 130 , 150)                                                                          #Two first speeds for H = 0 m, last 3 for H=5000m
-       rho_vec=( 1.225 , 1.225  , 0.736116  ,  0.736116 ,  0.736116 )                                                   # rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
+       Velocities = (70, 90 , 110  , 130 , 150)                                                                          #Two first speeds for H = 0 m, last 3 for H=5000m
+       rho_vec = (1.225 , 1.225, 0.736116,  0.736116,  0.736116)                                                   # rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
        #a_sound=(340,340,320.529 ,320.529 ,320.529)
-       Mach=[  0.2058 , 0.2647 , 0.3431  , 0.4055  , 0.4679  ]                                                           # Mach= Vel/a
+       Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                                                           # Mach= Vel/a
 
 
 
 
 elif aircraft['model']=='DECOL':
 
-      Velocities=(10,15,20,25,30,35)
-      rho_vec=(1.225,1.225,1.225,1.225,1.225,1.225)
-      Mach=np.ones((len(Velocities),1))*0.0001
+      Velocities = (10, 15, 20, 25, 30, 35)
+      rho_vec = (1.225, 1.225, 1.225, 1.225, 1.225, 1.225)
+      Mach = np.ones((len(Velocities), 1))*0.0001
 
 
 
@@ -309,22 +307,22 @@ elif aircraft['model']=='DECOL':
 
 #--- List all .stab file from vsp aero and read the coeff ---- 
 
-if g.hangar['aircraft']=='ATR72':
-    if g.hangar['version']=='original' or g.hangar['version']=='DEPoriginal':
-        if g.hangar['version']=='original' and g.nofin==True:
+if g.hangar['aircraft'] == 'ATR72':
+    if g.hangar['version'] == 'original' or g.hangar['version']=='DEPoriginal':
+        if g.hangar['version'] == 'original' and g.nofin == True:
             print("WARNING : Using "+g.hangar['version']+" without rudder. Not recommended...")
-        if g.hangar['version']=='DEPoriginal' and g.inop!=0 and g.nofin==True:
+        if g.hangar['version'] == 'DEPoriginal' and g.inop != 0 and g.nofin == True:
             print("WARNING : Using "+g.hangar['version']+" with inoperative engine and without rudder. Not recommended...")
 #        filename=['ATR72_SI_MTOW_Control_flap.stab', 'ATR72_SI_MTOW_Control_flapVmax.stab',
 #                  'ATR72_SI_MTOW_Control_Vmin.stab','ATR72_SI_MTOW_Control_Manoeuver.stab',
 #                  'ATR72_SI_MTOW_Control_Cruise.stab']
-        path='ATR72_SI_MTOW_FinLess_STAB/'
-        filenameNoFin=[path+'ATR72_FinLess_mach1.stab',path+'ATR72_FinLess_mach2.stab',path+'ATR72_FinLess_mach3.stab',
-                   path+'ATR72_FinLess_mach4.stab',path+'ATR72_FinLess_mach5.stab']
-        Matrix=ReadFileUtils.ReadStabCoef(filenameNoFin)
+        path = 'ATR72_SI_MTOW_FinLess_STAB/'
+        filenameNoFin = [path+'ATR72_FinLess_mach1.stab', path+'ATR72_FinLess_mach2.stab', path+'ATR72_FinLess_mach3.stab',
+                   path+'ATR72_FinLess_mach4.stab', path+'ATR72_FinLess_mach5.stab']
+        Matrix = ReadFileUtils.ReadStabCoef(filenameNoFin)
         
 
-elif g.hangar['aircraft']=='DECOL':
+elif g.hangar['aircraft'] == 'DECOL':
 
           # --- List all .stab file from vsp aero and read the coeff ----
           path = 'DECOL_STAB/'  # 'home/e.nguyen-van/Documents/DECOLStability&Analysis/DECOLDATA/DECOLGeom_DegenGeom_6_3_18h14
@@ -346,15 +344,15 @@ print("Adjusting Kf, Kh and VT size")
 print("New Kf and Kh")
 print(g.AdjustVT())
 
-CoefMatrix=g.NicolosiCoef(Matrix[:,1:], Mach)
+CoefMatrix=g.NicolosiCoef(Matrix[:, 1:], Mach)
         
 
 # --- Interpol coefficients for test case ---
 # Find sound velocity and air density
-atmospher=g.GetAtmo(H_base)
-a_sound=atmospher[0]
-rho_base=atmospher[1]
-M_base=V_base/a_sound
+atmospher = g.GetAtmo(H_base)
+a_sound = atmospher[0]
+rho_base = atmospher[1]
+M_base = V_base/a_sound
 
 
 
@@ -362,13 +360,13 @@ M_base=V_base/a_sound
 
 
 
-if g.hangar['aircraft']=='ATR72':
-               Coef_base=AeroForces.CoefInterpol(M_base, CoefMatrix, Mach)
-               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:,1:], Mach)
+if g.hangar['aircraft'] == 'ATR72':
+               Coef_base = AeroForces.CoefInterpol(M_base, CoefMatrix, Mach)
+               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Mach)
 
-elif g.hangar['aircraft']=='DECOL':
-               Coef_base=AeroForces.CoefInterpol(V_base, CoefMatrix, Velocities)
-               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:,1:], Velocities)
+elif g.hangar['aircraft'] == 'DECOL':
+               Coef_base = AeroForces.CoefInterpol(V_base, CoefMatrix, Velocities)
+               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Velocities)
 
 
 
@@ -378,7 +376,7 @@ elif g.hangar['aircraft']=='DECOL':
 
 # Define here the PropWing interaction
 
-if aircraft['model']=='ATR':
+if aircraft['model'] =='ATR':
 
         PropPath = "./ATR72_SI_MTOW_Control_FinLess_FEM/"
         PropFilenames = {'fem':[PropPath+"ATR72_FinLess_mach1",
@@ -395,7 +393,7 @@ if aircraft['model']=='ATR':
 
         if g.IsPropWing:
                      g.Pkeyword = "DefaultPatterson"
-        PW = PA.PropWing(g,PropFilenames)
+        PW = PA.PropWing(g, PropFilenames)
         PW.DeltaCL_a_0 = 1
 
 
@@ -410,15 +408,15 @@ elif aircraft['model']=='DECOL':
                             'AirfoilPolar':PropPath+"S3010_XTr10_Re350.txt",
                             'FlapPolar':PropPath+"S3010_XTr10_Re350_fl5.txt",
                             'AileronPolar':PropPath+"S3010_XTr10_Re350_fl5.txt"} # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
-            PW = PA.PropWing(g,PropFilenames)
+            PW = PA.PropWing(g, PropFilenames)
             #PW.AoAZero[:,-1] = PW.AoAZero[:,-1] + 3.2/180*np.pi #correction for angle of incidence of wing
-            PW.AoAZero[:,0] = PW.AoAZero[:,0]*10**(-3)
-            PW.CLslope[:,0] = PW.CLslope[:,0]*10**(-3)
-            PW.AoAZero[:,1] = PW.AoAZero[:,1]*10**(-6)
-            PW.CLslope[:,1] = PW.CLslope[:,1]*10**(-6)         #TO CORRECT UNITS AS DECOL.vsp3 is in mm
-            PW.AoAZero[:,2] = PW.AoAZero[:,2]*10**(-3)
-            PW.CLslope[:,2] = PW.CLslope[:,2]*10**(-3)
-            PW.DeltaCL_a_0 = 1 #CL_alpha correction factor
+            PW.AoAZero[:, 0] = PW.AoAZero[:, 0]*10**(-3)
+            PW.CLslope[:, 0] = PW.CLslope[:, 0]*10**(-3)
+            PW.AoAZero[:, 1] = PW.AoAZero[:, 1]*10**(-6)
+            PW.CLslope[:, 1] = PW.CLslope[:, 1]*10**(-6)         #TO CORRECT UNITS AS DECOL.vsp3 is in mm
+            PW.AoAZero[:, 2] = PW.AoAZero[:, 2]*10**(-3)
+            PW.CLslope[:, 2] = PW.CLslope[:, 2]*10**(-3)
+            PW.DeltaCL_a_0 = 1  # CL_alpha correction factor
 
 
 
@@ -511,14 +509,14 @@ if g.minimize_in_alpha == True:
 
 
         #Initialise test and guess vectors
-        if g.nofin==False:
+        if g.nofin == False:
             # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, gamma, V]
-            x0=np.array([5*math.pi/180, 0,0,0, 0.00, 0.0, 0.0, 0.0, 0,0,V_base])
-            bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-20/180*math.pi,20/180*math.pi), (-deltaRmax/180*math.pi,deltaRmax/180*math.pi) , (-10/180*math.pi,10/180*math.pi),(0.5*V_base,1.5*V_base))
+            x0 = np.array([5*math.pi/180, 0, 0, 0, 0.00, 0.0, 0.0, 0.0, 0, 0, V_base])
+            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2,0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi), (-deltaRmax/180*math.pi, deltaRmax/180*math.pi), (-10/180*math.pi, 10/180*math.pi), (0.5*V_base, 1.5*V_base))
         else:
             # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, gamma]
-            x0=np.array([7.5*math.pi/180, 0,0,0, 0.00, 0.05, 0.00, 0.00,V_base])
-            bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-20/180*math.pi,20/180*math.pi), (-10/180*math.pi,10/180*math.pi),(0.5*V_base,1.5*V_base))
+            x0 = np.array([7.5*math.pi/180, 0, 0, 0, 0.00, 0.05, 0.00, 0.00, V_base])
+            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi), (-10/180*math.pi, 10/180*math.pi), (0.5*V_base, 1.5*V_base))
 
 
 
@@ -531,7 +529,7 @@ if g.minimize_in_alpha == True:
 
 
         fixtest = np.array([beta_base, omega])
-        dx=0.8
+        dx = 0.8
         dx_vec = np.full(g.N_eng, dx)
 
 
@@ -563,8 +561,8 @@ if g.minimize_in_alpha == True:
 
         gamma = k.x[-2]
         V_base = k.x[-1]
-        k.x = np.concatenate((k.x[:-2],fixtest[-g.N_eng:]))
-        fixtest = np.array([V_base, fixtest[0] , gamma ,fixtest[1] ])
+        k.x = np.concatenate((k.x[:-2], fixtest[-g.N_eng:]))
+        fixtest = np.array([V_base, fixtest[0], gamma,fixtest[1]])
         diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
 
 
@@ -622,7 +620,7 @@ printx(k.x, fixtest, atmospher, g, PW)
 
 
 # check if constraints are validated
-constraints_calc=e.Constraints_DEP(k.x,*diccons)
+constraints_calc = e.Constraints_DEP(k.x, *diccons)
 print("\nConstraints")
 print(constraints_calc)
 

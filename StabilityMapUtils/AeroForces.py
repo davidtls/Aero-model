@@ -184,7 +184,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
             else:
-                Fbody = np.array([-DragQuad,F[1],-F[2]-CLCl[0]])  # add alpha=0 coefficients
+                Fbody = np.array([-DragQuad, F[1], -F[2]-CLCl[0]])  # add alpha=0 coefficients
                 # add roll effect
                 Moment = M+np.array([CLCl[1], g.Cm0 + g.Cm0_fl, CLCl[4]])
 
@@ -278,7 +278,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     CL0_int = (PropWing.CalcCoef(Tc, V/a_sound, atmo, 0, dail, 0, g,beta, p, V, r)[0] + g.aht*0 + g.CL0_HT)
 
 
-    g.Vef2Vinf_2 = PropWing.Augmented_velocity_wing(Tc, V/a_sound, atmo, x[0], dail, g.FlapDefl, g,beta,p,V,r)          #(V_ef/V_inf)^2  (is not vtail/Vinf , keep that in mind)
+    g.Vep2Vinf = (PropWing.Augmented_velocity_wing(Tc, V / a_sound, atmo, x[0], dail, g.FlapDefl, g, beta, p, V, r)) ** 0.5     # (V_ef/V_inf) (is not vtail/Vinf , keep that in mind)
 
 
     """
@@ -296,7 +296,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     # Slipstream velocity to free stream velocity
 
-    VarVtoV = (1+Fx/(0.5*g.N_eng*rho*g.Sp*V**2))**0.5 - 1  # Same value than before with Patterson
+    VarVtoV = (1+Fx/(0.5*g.N_eng*rho*g.Sp*V**2))**0.5 - 1  # Similar value than before with Patterson, is momenthum theory ...
 
 
     # Contracted slisptream diameter
@@ -331,7 +331,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     V2 = (1 + VarVtoV) * V
 
-    if (1 - (2*h / D_s)**2) > 0 :
+    if (1 - (2*h / D_s)**2) > 0:
         bs = D_s * (1 - (2*h / D_s)**2) ** 0.5
         Sh_s = 2 * bs * g.c_ht
 
@@ -349,14 +349,14 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     # TAIL-OFF PITCHING MOMENT!
 
-    Cm_0 = g.Cm0_wo_HT + g.Cm0_fl + g.Cm_alpha_wb*alpha + np.dot (CoefMatrix[4,1:8],x[1:8])
+    Cm_0 = g.Cm0_wo_HT + g.Cm0_fl + g.Cm_alpha_wb*alpha + np.dot(CoefMatrix[4, 1:8], x[1:8])
 
 
 
 
     c_flaps = g.c * np.sqrt(((1-g.FlChord) + g.FlChord*np.cos(g.FlapDefl))**2 + (g.FlChord*np.sin(g.FlapDefl))**2)
 
-    Cm_s_0 = g.N_eng * ((D_s * g.c)/g.S) * g.cm_0_s * ((g.Vef2Vinf_2*V/V)**2-1)
+    Cm_s_0 = g.N_eng * ((D_s * g.c)/g.S) * g.cm_0_s * ((g.Vep2Vinf * V / V) ** 2 - 1)
 
     Cm_s_df = (c_flaps/g.c)*(-0.25+0.32*g.FlChord / c_flaps) * (1+0.2*(1-np.sqrt(2) * np.sin(g.FlapDefl))) * g.CL0_fl
 

@@ -37,17 +37,17 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     omega = 0
 
 
-    alpha = 0.09595181246845542
-    p = 0
+    alpha = 0.09714308314055935
+    p = 0  # 0.25 max
     q = 0
-    r = 0
+    r = 0   # 0.1 max
 
     phi = 0
-    theta = 0.09595181261150709
+    theta = 0.09714308313635767
     aileron = 0
-    elevator = -0.09167814432205841
+    elevator = -0.09159564024517891
     rudder = 0
-    delta_x = 0.3496433683241823
+    delta_x = 0.3153354079620341
 
     g.FlapDefl = 0*np.pi/180  # 15*np.pi/180 , 30*np.pi/180
 
@@ -125,7 +125,7 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
 
 
-    Tc = Fx_vec / (2 * rho * g.Sp * V_vect ** 2)
+    Tc = Fx_vec / (2 * rho * g.Sp * V ** 2)
 
 
 
