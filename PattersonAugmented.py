@@ -262,20 +262,22 @@ class PropWing:
 
 ## ------- Utility re-organize the lift in custom nnp data ------------
 
-    def ReOrganiseLift(self,lift):
-        #reorganise lift distribution for plotting or other uses
-        dtype=[('Yposi',np.float),('Area',np.float),('LocalChord',np.float),('Cl',np.float),('Cdw',np.float),('Cd0',np.float)]
+    def ReOrganiseLift(self, lift):
+        # reorganise lift distribution for plotting or other uses
+        dtype=[('Yposi', np.float), ('Area', np.float), ('LocalChord', np.float), ('Cl', np.float), ('Cdw', np.float), ('Cd0', np.float), ('Vep_total', np.float), ('V_r_effects', np.float) ]
         structArray = np.zeros((len(lift[:,1]),),dtype=dtype)
-        structArray['Yposi']=lift[:,0]
-        structArray['Area']=lift[:,1]
-        structArray['LocalChord']=lift[:,2]
-        structArray['Cl']=lift[:,3]
-        structArray['Cdw']=lift[:,4]
-        structArray['Cd0']=lift[:,5]
+        structArray['Yposi'] = lift[:, 0]
+        structArray['Area'] = lift[:, 1]
+        structArray['LocalChord'] = lift[:, 2]
+        structArray['Cl'] = lift[:, 3]
+        structArray['Cdw'] = lift[:, 4]
+        structArray['Cd0'] = lift[:, 5]
+        structArray['Vep_total'] = lift[:, 6]
+        structArray['V_r_effects'] = lift[:,7]
 
-        return np.sort(structArray,order='Yposi')
+        return np.sort(structArray, order='Yposi')
     
-    def SumDistributedCoef(self, DistCoef, plane,beta,p,V,r):
+    def SumDistributedCoef(self, DistCoef, plane, V):
         ''' Takes as input the distributed coef
         Returns CL and Cl (lift and rolling moment coefficient)
         
@@ -288,19 +290,18 @@ class PropWing:
         
         SortedCoef = self.ReOrganiseLift(DistCoef)
 
-
-        Velocity =  V * (     np.cos((-np.sign(SortedCoef['Yposi'])) * beta  + plane.wingsweep)) - r * SortedCoef['Yposi']
-
-
+        Vep_total = SortedCoef['Vep_total']
+        Vi = SortedCoef['V_r_effects']
 
 
-        tempRoll = np.sum((-SortedCoef['Yposi']*SortedCoef['Cl']*SortedCoef['Area']*Velocity**2))/(plane.b*plane.S*V**2)
 
-        tempCL = np.sum(SortedCoef['Cl'] * SortedCoef['Area'] * Velocity**2) / (plane.S * V**2)
+        tempRoll = np.sum((-SortedCoef['Yposi']*SortedCoef['Cl']*SortedCoef['Area']*Vi**2))/(plane.b*plane.S*V**2)
 
-        tempCdWash = np.sum(SortedCoef['Area'] * SortedCoef['Cdw'] * Velocity**2) / (plane.S * V ** 2)
+        tempCL = np.sum(SortedCoef['Cl'] * SortedCoef['Area'] * Vi**2) / (plane.S * V**2)
 
-        tempCd0 = np.sum(SortedCoef['Area'] * SortedCoef['Cd0'] * Velocity**2) / (plane.S * V ** 2)
+        tempCdWash = np.sum(SortedCoef['Area'] * SortedCoef['Cdw'] * Vi**2) / (plane.S * V ** 2)
+
+        tempCd0 = np.sum(SortedCoef['Area'] * SortedCoef['Cd0'] * Vi**2) / (plane.S * V ** 2)
 
 
 
@@ -335,7 +336,7 @@ class PropWing:
         #Fast computation smoothing (for study with flaps / high Tc)
 
         #Choice 1: brings Cl to its negative symmetry (vortex)
-        Cl =np.hstack( (-SortedCoef['LocalChord'][0]*SortedCoef['Cl'][0], SortedCoef['LocalChord']*SortedCoef['Cl'], -SortedCoef['LocalChord'][-1]*SortedCoef['Cl'][-1]) )
+        Cl = np.hstack((-SortedCoef['LocalChord'][0]*SortedCoef['Cl'][0], SortedCoef['LocalChord']*SortedCoef['Cl'], -SortedCoef['LocalChord'][-1]*SortedCoef['Cl'][-1]))
         
         #Choice 2: brings Cl to 0
 #        Cl =np.hstack( (0, SortedCoef['LocalChord']*SortedCoef['Cl'], 0) )
@@ -344,9 +345,9 @@ class PropWing:
 
 
         dY = SortedCoef['Yposi'][-1]-SortedCoef['Yposi'][-2]
-        Yextended = np.hstack( (SortedCoef['Yposi'][0]-dY, SortedCoef['Yposi'], SortedCoef['Yposi'][-1]+dY) )
-        Diffcl1 = np.hstack( (0, np.diff(Cl)/np.diff(Yextended)) )        # diff gives out Cl[i+1]-Cl[i],Cl[i+2] - Cl[i+1] ...
-        Diffcl2 = np.hstack( (np.diff(Cl)/np.diff(Yextended),0) )
+        Yextended = np.hstack((SortedCoef['Yposi'][0]-dY, SortedCoef['Yposi'], SortedCoef['Yposi'][-1]+dY))
+        Diffcl1 = np.hstack((0, np.diff(Cl)/np.diff(Yextended)))        # diff gives out Cl[i+1]-Cl[i],Cl[i+2] - Cl[i+1] ...
+        Diffcl2 = np.hstack((np.diff(Cl)/np.diff(Yextended), 0))
         Diffcl3 = (Diffcl1+Diffcl2)/2
         Diffcl = (Diffcl3[:-1] + Diffcl3[1:])/2
 
@@ -361,7 +362,7 @@ class PropWing:
 
 
         #Adjust position. Yposi is in the center of the slices, DiffclPosi is in the extremes
-        DiffclPosi = np.hstack( ((-plane.b/2),SortedCoef['Yposi'][1:] - np.diff(SortedCoef['Yposi'])/2,(plane.b/2)) )
+        DiffclPosi = np.hstack(((-plane.b/2), SortedCoef['Yposi'][1:] - np.diff(SortedCoef['Yposi'])/2, (plane.b/2)))
 
 
 
@@ -383,25 +384,29 @@ class PropWing:
         
 
 
-        wiadim = wiadim * Velocity * 1 / (8 * np.pi)
-        if self.PlotDrag==True:
+        wiadim = wiadim * Vi * 1 / (8 * np.pi)
+        if self.PlotDrag == True:
             self.wiadim = wiadim  # save for later plotting
 
 
         # Compute new induced drag by integrating downwash wiadim
 
-        Cdi = np.trapz( SortedCoef['LocalChord'] * Velocity * SortedCoef['Cl'] * wiadim,SortedCoef['Yposi'])/(plane.S*V**2)
+        Cdi = np.trapz(SortedCoef['LocalChord'] * Vi * SortedCoef['Cl'] * wiadim, SortedCoef['Yposi'])/(plane.S*V**2)
+
+        self.Cdi_vec = np.zeros(len(SortedCoef['Yposi']))
+        for i in range(len(SortedCoef['Yposi'])):
+           self.Cdi_vec[i] = (SortedCoef['LocalChord'][i] * Vi[i] * SortedCoef['Cl'][i] * wiadim[i]) * (DiffclPosi[i+1] - DiffclPosi[i])/(plane.S*V**2)
 
 
         # Compute yaw moment due to asymetric induced velocity: sum cdi_local*ylocal
 
-        tempYaw = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim * SortedCoef['Yposi']*Velocity**2, SortedCoef['Yposi']) / (plane.S * plane.b*V**3)
+        tempYaw = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim * SortedCoef['Yposi']*Vi**2, SortedCoef['Yposi']) / (plane.S * plane.b*V**3)
 
-        tempYaw_w = sum(SortedCoef['Area'] * SortedCoef['Cdw'] * (SortedCoef['Yposi'] *Velocity**2 )) / (plane.b * plane.S * V**2)
+        tempYaw_w = sum(SortedCoef['Area'] * SortedCoef['Cdw'] * (SortedCoef['Yposi'] * Vi**2)) / (plane.b * plane.S * V**2)
 
         
         if plane.DisplayPatterInfo:
-            print('TempYaw = {0:0.5f}, TempYaw_w = {1:0.5f}'.format(tempYaw,tempYaw_w))
+            print('TempYaw = {0:0.5f}, TempYaw_w = {1:0.5f}'.format(tempYaw, tempYaw_w))
             plt.figure()
             plt.plot(SortedCoef['Yposi'], SortedCoef['LocalChord']*SortedCoef['Cl']*wiadim/(plane.c))
             plt.xlabel('Span (m)')
@@ -415,29 +420,29 @@ class PropWing:
 
 
         
-        return np.array([tempCL,tempRoll,Cdi,tempCd0,tempYaw+tempYaw_w,tempCdWash])
+        return np.array([tempCL, tempRoll, Cdi, tempCd0, tempYaw+tempYaw_w, tempCdWash])
     
-    def CalcCoef(self, dx, Mach, atmo, aoa, dail, dfl, plane,beta,p,V,r):
+    def CalcCoef(self, dx, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r):
         '''
         Returns the coefficient as [CL, Cl, Cdi, Cd0, Cn, Cdw]
         '''
 #        self.PlotDist(dx,atmo,aoa,dfl,plane,False) Already in main no need to activate it here
-        results = self.SumDistributedCoef(self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane,beta,p,V,r),plane,beta,p,V,r)
+
+        results = self.SumDistributedCoef(self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r), plane, V)
         
         return results
 
-    def PlotDist(self, dx, Mach, atmo, aoa, dail, dfl, plane, IfSave, beta, p, V, r):
+    def PlotDist(self, Tc, Mach, atmo, aoa, dail, dfl, plane, IfSave, beta, p, V, r):
         self.PlotDrag = True  # only here for accompanying drag distribution
-        data = self.PatterJames(dx, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r)                                   #No es dx realmente, es Tc
+        data = self.PatterJames(Tc, Mach, atmo, aoa, dail, dfl, plane, beta, p, V, r)
         Dist = self.ReOrganiseLift(data)
-        self.Coef = self.SumDistributedCoef(data, plane, beta, p, V, r)
+        self.Coef = self.SumDistributedCoef(data, plane, V)
 
-        Velocity = V * (np.cos((-np.sign(Dist['Yposi'])) * beta + plane.wingsweep)) - r * Dist['Yposi']
-        CL_corrected = (Dist['Cl'] * Velocity**2) / (V**2)
+        CL_corrected = (Dist['Cl'] * Dist['V_r_effects']**2) / (V**2)
 
         self.PlotDrag = False
         plt.figure()                                                                                                    #  Create a new figure, or activate an existing figure.
-        plt.plot(Dist['Yposi'], CL_corrected, linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(dx[0]))     #  Plot y versus x as lines and/or markers.
+        plt.plot(Dist['Yposi'], CL_corrected, linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))     #  Plot y versus x as lines and/or markers.
         ax = plt.gca()                                                                                                  #  Get the current Axes.
         ax.set_xlabel('Y (m)')                                                                                          #  Writes label for an axe
         ax.set_ylabel('Local $C_L$')
@@ -447,7 +452,7 @@ class PropWing:
         
         fig1 = plt.figure()
         ax1 = fig1.gca()
-        ax1.plot(Dist['Yposi'], self.wiadim/(8*np.pi)*180/np.pi, label="$α_i$, $T_c$ = {0:0.3f}".format(dx[0]), linestyle='-.', color='0.25')
+        ax1.plot(Dist['Yposi'], self.wiadim/(8*np.pi)*180/np.pi, label="$α_i$, $T_c$ = {0:0.3f}".format(Tc[0]), linestyle='-.', color='0.25')
         ax1.set_xlabel('Y (m)')
         ax1.set_ylabel('Downwash angle (°)')
         ax1.legend()
@@ -455,9 +460,57 @@ class PropWing:
         fig1.tight_layout()
 
 
+        fig2 = plt.figure()
+        ax2 = fig2.gca()
+        plt.plot(Dist['Yposi'], self.Cdi_vec  , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        ax2.set_xlabel('Y (m)')
+        ax2.set_ylabel('Cd induced')
+        ax2.legend()
+        ax2.grid()
+        fig2.tight_layout()
+
+
+        fig3 = plt.figure()
+        ax3 = fig3.gca()
+        plt.plot(Dist['Yposi'], Dist['Cdw'] , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        ax3.set_xlabel('Y (m)')
+        ax3.set_ylabel('Cd wash')
+        ax3.legend()
+        ax3.grid()
+        fig3.tight_layout()
+
+
+        fig4 = plt.figure()
+        ax4 = fig4.gca()
+        plt.plot(Dist['Yposi'],  Dist['Cd0'] , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        ax4.set_xlabel('Y (m)')
+        ax4.set_ylabel('Cd0_extra ')
+        ax4.legend()
+        ax4.grid()
+        fig4.tight_layout()
 
 
 
+
+        fig5 = plt.figure()
+        ax5 = fig5.gca()
+        plt.plot(Dist['Yposi'], self.Cdi_vec + Dist['Cdw'] + Dist['Cd0'] , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        ax5.set_xlabel('Y (m)')
+        ax5.set_ylabel('Cd_wash + Cd induced + Cd0 ')
+        ax5.legend()
+        ax5.grid()
+        fig5.tight_layout()
+
+
+
+        fig6 = plt.figure()
+        ax6 = fig6.gca()
+        ax6.plot(Dist['Yposi'], Dist['Cl'], label="$α_i$, $T_c$ = {0:0.3f}".format(Tc[0]), linestyle='-.', color='0.25')
+        ax6.set_xlabel('Y (m)')
+        ax6.set_ylabel('CL not corrected')
+        ax6.legend()
+        ax6.grid()
+        fig6.tight_layout()
 
 
         plt.show(block=True)   # added to plot correctly
@@ -508,11 +561,9 @@ class PropWing:
 
 
         av_alpha_0 = np.mean(alpha0w)
-        V_vect = np.zeros(len(Tc)) 
-        T = np.zeros(len(Tc))
-         
+
         V_vect = V * (np.cos((-np.sign(plane.PosiEng)) * beta + plane.wingsweep)) - r * plane.PosiEng
-        Velocity =  V * (     np.cos((-np.sign(NormCl[:, 0])) * beta  + plane.wingsweep)) - r * NormCl[:, 0]
+        Velocity = V * (np.cos((-np.sign(NormCl[:, 0])) * beta + plane.wingsweep)) - r * NormCl[:, 0]
         T = Tc * (2 * rho * V ** 2 * plane.Sp)
 
 
@@ -536,7 +587,9 @@ class PropWing:
 
 
 
-             #be careful, what you get is Vp /V_vect
+             # Be careful, what you get is Vp /V_vect, not Vep/V_vect
+             # According to momenthum theory, inmediatly after the propeller the speed is Var_V. Far down-wash, it is 2Var_V.
+             # Here we take Vp = 2Var_V.
 
 
 
@@ -573,26 +626,17 @@ class PropWing:
             alpha_ail_r = aoa
 
 
-
-
-        alpha_t = np.zeros(len(NormCl[:, 0]))
-
-        for i in range(len(NormCl[:, 0])):
-
-            alpha_t[i] = - (alpha0w[i]) + aoa + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[i,0]) + p * NormCl[i,0]/Velocity[i]    #CHANGE V BY V_VECT OF 116 COMPONENTS
-
-
-
-        alpha_fl_t    = alpha_fl    - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/Velocity[:]
-        alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/Velocity[:]
-        alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:,0]) + p * NormCl[:,0]/Velocity[:]
+        alpha_t       =  aoa        - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
+        alpha_fl_t    = alpha_fl    - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
+        alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
+        alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
 
         #corresponding alpha max, assume aileron stall angle is alpha_t_max:
 #        alpha_t_max = plane.alpha_max + alpha0w
 #        alpha_fl_t_max = plane.alpha_max_fl + alpha0w - self.alpha0_fl * dfl
         
-        alpha_t_max = plane.alpha_max *np.ones_like(alpha0w)
-        alpha_fl_t_max = plane.alpha_max_fl *np.ones_like(alpha0w) - self.alpha0_fl * dfl
+        alpha_t_max = plane.alpha_max * np.ones_like(alpha0w)
+        alpha_fl_t_max = plane.alpha_max_fl * np.ones_like(alpha0w) - self.alpha0_fl * dfl
         
         
         #Determine if section is behind propeller, has flap or ailerons
@@ -672,6 +716,8 @@ class PropWing:
         LocalCl = np.copy(NormCl)
         self.PWashDrag = np.zeros(int(len(LocalCl))).reshape(int(len(LocalCl)), 1)
         self.Cd0_vec = np.zeros(int(len(LocalCl))).reshape(int(len(LocalCl)), 1)
+        self.LocalVelocity = np.zeros(int(len(LocalCl))).reshape(int(len(LocalCl)), 1)
+
         
         
         for i in range(len(SectInProp)):
@@ -681,9 +727,11 @@ class PropWing:
                 #Compute lift multiplier, aoa and local drag with flap
                 if SectHasFlap[i]:
                     LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip+self.alpha0_fl * dfl)/(np.sin(alpha_fl_t[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
-                    alpha_ep_drag[i] = (alpha_fl_t[i] - self.mu[j]*(plane.ip+self.alpha0_fl * dfl)) /(1+self.mu[j])-alpha_fl_t[i] #+ self.AoAZero[i,-1]
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
-                    
+                    alpha_ep_drag[i] = (alpha_fl_t[i] - self.mu[j]*(plane.ip+self.alpha0_fl * dfl)) /(1+self.mu[j])-alpha_fl_t[i] + p * NormCl[i, 0]/Velocity[i]    #+ self.AoAZero[i,-1]
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
+                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) * V
+
                     alpha_ep[i] = np.arctan((alpha_fl_t[i] - self.mu[j]*(plane.ip+self.alpha0_fl * dfl)) /(1+self.mu[j]))
                     if alpha_ep[i] < alpha_fl_t_max[i]:
                         LocalCl[i, -1] = LocalCl[i, -1] * alpha_fl_t[i]
@@ -697,8 +745,10 @@ class PropWing:
                 elif SectHasAilLeft[i]:
                     #Compute lift multiplier, aoa and local drag with aileron
                     LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip+self.alpha0_ail * dail_l)/(np.sin(alpha_ail_t_l[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
-                    alpha_ep_drag[i] = (alpha_ail_t_l[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_l)) /(1+self.mu[j])-alpha_ail_t_l[i] #+ self.AoAZero[i,-1]
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    alpha_ep_drag[i] = (alpha_ail_t_l[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_l)) /(1+self.mu[j])-alpha_ail_t_l[i] + p * NormCl[i, 0]/Velocity[i]#+ self.AoAZero[i,-1]
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
+                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) *V
                     
                     alpha_ep[i] = np.arctan((alpha_ail_t_l[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_l)) /(1+self.mu[j]))
                     if alpha_ep[i] < alpha_t_max[i]:
@@ -713,8 +763,10 @@ class PropWing:
                 elif SectHasAilRight[i]:
                     #Compute lift multiplier, aoa and local drag with aileron
                     LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip+self.alpha0_ail * dail_r)/(np.sin(alpha_ail_t_r[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
-                    alpha_ep_drag[i] = (alpha_ail_t_r[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_r)) /(1+self.mu[j])-alpha_ail_t_r[i] #+ self.AoAZero[i,-1]
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    alpha_ep_drag[i] = (alpha_ail_t_r[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_r)) /(1+self.mu[j])-alpha_ail_t_r[i] + p * NormCl[i, 0]/Velocity[i]#+ self.AoAZero[i,-1]
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
+                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) *V
                     
                     alpha_ep[i] = np.arctan((alpha_ail_t_r[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_r)) /(1+self.mu[j]))
                     if alpha_ep[i] < alpha_t_max[i]:
@@ -729,8 +781,11 @@ class PropWing:
                 else:
                     #Compute lift multiplier, aoa and local drag on clean wing
                     LmFl[i] = (1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip)/(np.sin(alpha_t[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
-                    alpha_ep_drag[i] = (alpha_t[i] - self.mu[j] * plane.ip) /(1+self.mu[j])-alpha_t[i] #+ self.AoAZero[i,-1]
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    alpha_ep_drag[i] = (alpha_t[i] - self.mu[j] * plane.ip) /(1+self.mu[j])-alpha_t[i] + p * NormCl[i, 0]/Velocity[i]#+ self.AoAZero[i,-1]
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
+                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) *V
+
                     
                     alpha_ep[i] = np.arctan((alpha_t[i] - self.mu[j] * plane.ip) /(1+self.mu[j]))
                     if alpha_ep[i] < alpha_t_max[i]:
@@ -743,8 +798,9 @@ class PropWing:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(self.alphaDrag[-1])+np.sin(alpha_t_max[i])*np.sin(alpha_t[i])/np.cos(alpha_t_max[i])
             else:
                 LmFl[i] = 0
-                alpha_ep_drag[i] = 0
+                alpha_ep_drag[i] = 0 + p * NormCl[i, 0]/Velocity[i]
                 self.Cd0_vec[i] = 0
+                self.LocalVelocity[i] = V * (np.cos((-np.sign(NormCl[i, 0])) * beta + plane.wingsweep)) - r * NormCl[i, 0]
                 if SectHasFlap[i]:
                     alpha_ep[i] = alpha_fl_t[i]
                     # Check stall
@@ -793,16 +849,18 @@ class PropWing:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(self.alphaDrag[-1])+np.sin(alpha_t_max[i])*np.sin(alpha_t[i])/np.cos(alpha_t_max[i])
         
         BlownCl = np.copy(LocalCl)
-        BlownCl[:, -1] = LocalCl[:, -1]*(LmFl+1) * self.DeltaCL_a_0
-#        self.PWashDrag[:,0] = BlownCl[:,-1] * np.tan(alpha_ep_drag)
+        BlownCl[:, -1] = LocalCl[:, -1]*(LmFl+1) * np.cos(-alpha_ep_drag) *self.DeltaCL_a_0
         self.PWashDrag[:, 0] = BlownCl[:, -1] * np.sin(-alpha_ep_drag)
         self.LmFl = LmFl
         self.alpha_t_max = alpha_t_max
         self.alpha_fl_t_max = alpha_fl_t_max
         self.alpha_ail_t_l = alpha_ail_t_l
         self.alpha_ep = alpha_ep
-    
-        return np.hstack((np.hstack((BlownCl, self.PWashDrag)), self.Cd0_vec))
+
+        Vel = np.zeros(int(len(LocalCl))).reshape(int(len(LocalCl)), 1)
+        Vel[:, 0] = Velocity
+
+        return np.hstack((np.hstack((BlownCl, self.PWashDrag)), self.Cd0_vec, self.LocalVelocity, Vel))
 
 
 
@@ -811,7 +869,7 @@ class PropWing:
     deflected an angle alpha_ep . Negative sign in self.PWashDrag[:, 0] = BlownCl[:, -1] * np.sin(-alpha_ep_drag) 
     as  formule is  Cd_i,w = CL * sen (alpha-alpha_ep)  Page 75 Eric Nguyen's thesis
     
-    self.DeltaCL_a_0 CL_alpha correction factor, equal to 1. Defined in Main
+    self.DeltaCL_a_0 CL_alpha correction factor, equal to 1. Defined in Main. For tunning
     
     
     self.StallDrag = interp1d(self.alphaDrag,self.StallDrag)   interpolates between the columns alpha and 
@@ -829,56 +887,52 @@ class PropWing:
 
 
 
-    def Augmented_velocity_wing(self, Tc, Mach, atmospher, aoa, dail, dfl, plane,beta,p,V,r):
+    def Augmented_velocity_wing(self, Tc, Mach, atmospher, aoa, dail, dfl, plane, beta, p, V, r):
 
-        rho=atmospher[1]
+        rho = atmospher[1]
 
-        V_vect = np.zeros(len(Tc))
-        T=np.zeros(len(Tc))
 
-        V_vect= V * (     np.cos((-np.sign(  plane.PosiEng  )) * beta  + plane.wingsweep)) - r *  plane.PosiEng
-        T=Tc *(2 * rho * V **2 * plane.Sp )
+        V_vect = V * (np.cos((-np.sign(plane.PosiEng)) * beta + plane.wingsweep)) - r * plane.PosiEng
+        T = Tc * (2 * rho * V ** 2 * plane.Sp)
 
-        myw=np.zeros(len(Tc))
-        muu=np.zeros(len(Tc))
+        myw = np.zeros(len(Tc))
+        muu = np.zeros(len(Tc))
 
         for i in range(len(Tc)):
-            if Tc[i]==0:
+            if Tc[i] == 0:
                  #No Thrust, no need to solve the equation
-                 myw[i]=0
+                 myw[i] = 0
             else:
-                 coef=[1,2*np.cos(aoa-plane.alpha_0+plane.ip),1,0,- (T[i]/ (2 * rho * plane.Sp * V_vect[i]**2)) ** 2]
-                 roots=np.roots(coef)
+                 coef = [1, 2*np.cos(aoa-plane.alpha_0+plane.ip), 1, 0, - (T[i] / (2 * rho * plane.Sp * V_vect[i]**2)) ** 2]
+                 roots = np.roots(coef)
                  #get the real positive root
                  for j in range(len(roots)):
                      if np.real(roots[j])>0:
                          myw[i]=np.real(roots[j])
             # test the negative thrust effects by simply setting negative roots
-            if Tc[i]<0:
-                 muu[i]=myw[i]
+            if Tc[i] < 0:
+                 muu[i] = 2*myw[i]
             else:
-                 muu[i]=myw[i]
+                 muu[i] = 2*myw[i]
 
 
 
         #get wing alpha0
-        alpha0w = self.Interpol(self.AoAZero, Mach) # test with section zero lift angle
-        alpha0w=alpha0w[:,-1] # keep only alpha0
+        alpha0w = self.Interpol(self.AoAZero, Mach)  # test with section zero lift angle
+        alpha0w = alpha0w[:, -1]  # keep only alpha0
 
         #Get the local slope
         NormCl = self.Interpol(self.CLslope, Mach)
 
 
-        alpha_t=np.zeros(len(NormCl[:,0]))
-
-        for i in range(len(NormCl[:,0])):
-
-            alpha_t[i] = - (alpha0w[i]) + aoa + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[i,0]) + p * NormCl[i,0]/V
-
+        Velocity = V * (np.cos((-np.sign(NormCl[:, 0])) * beta + plane.wingsweep)) - r * NormCl[:, 0]
+        alpha_t = aoa - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
         alpha_t_mean = np.mean(alpha_t)
 
+
+
         V_ef_TO_V_inf = (1 + 2*muu[0]*np.cos(alpha_t_mean + plane.ip) + (muu[0])**2 )**0.5
-        Pressure_ratio=(V_ef_TO_V_inf)**2
+        Pressure_ratio = V_ef_TO_V_inf**2
 
 
         return Pressure_ratio
