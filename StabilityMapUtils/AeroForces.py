@@ -172,7 +172,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
         F[2] = np.dot(CoefMatrix[2][1:], xsym[1:]) + CL_tail                                                #F[2] Calculated without alpha: CL_BETA*BETA + CL_P*P + CL_Q*Q + CL_R*R + CL_DA*|DA| + CL_DE*DE + CL_DR*|DR|   )
                                                                                                                         #Terms for horizontal tail added (alpha, and 0-alpha term) to modify x[0] and g.CL0_HT to take into account slisptream
-        if V <= g.VelFlap:
+        if V <= g.VelFlap or g.FlapDefl != 0:
 
             CLCl = PropWing.CalcCoef(Tc, V/a_sound, atmo, x[0], dail, g.FlapDefl, g, beta, p, V, r)
 
@@ -196,7 +196,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
             Moment = M+np.array([CLCl[1], g.Cm0, CLCl[4]])
     else:
 
-        if V <= g.VelFlap:
+        if V <= g.VelFlap or g.FlapDefl != 0:
             Fbody = np.array([-DragQuad, F[1], -F[2]-g.CL0 - g.CL0_fl])
             Moment = M+np.array([0, g.Cm0 + g.Cm0_fl, 0])
         else:
@@ -253,12 +253,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
     # here x must be of the form (alpha, beta, p, q, r, da, de, dr)
-    # set non dim for p,q,r
-    nonDim = np.ones(len(x))
-    nonDim[2] = g.b/(2*V)
-    nonDim[3] = g.c/(2*V)
-    nonDim[4] = g.b/(2*V)
-    x = x*nonDim
+
 
 
     if g.IsPropWing and g.isail:
@@ -364,7 +359,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     if g.FlapDefl == 0:
 
-        F=0
+        F = 0
 
     elif g.FlapDefl <= 30*np.pi/180:
 
@@ -378,7 +373,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-    Cm_tail_off = Cm_s_0 + Cm_s_df + Cm_s_alpha +Cm_0 - (CL_alpha_interaction * alpha + g.CL0_fl + (CL0_int-g.CL0))*(g.lemac + 0.25*g.c - g.x_cg)
+    Cm_tail_off = Cm_s_0 + Cm_s_df + Cm_s_alpha + Cm_0 - (CL_alpha_interaction * alpha + g.CL0_fl + (CL0_int-g.CL0))*(g.lemac + 0.25*g.c - g.x_cg)
 
 
 

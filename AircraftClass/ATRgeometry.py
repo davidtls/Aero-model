@@ -90,7 +90,7 @@ class data:
 
 
     # --- Distances ---
-    z_m = -0.304   # vertical distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
+    z_m = -0.443   # vertical distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
     z_h_w = 3.371  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP
     lh = 14.2183   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
     lh2 = 12.09    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
