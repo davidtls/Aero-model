@@ -17,7 +17,8 @@ import scipy.io #input/output with matlab
 import matplotlib as mpl
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
-from scipy.optimize import  minimize
+from scipy.optimize import minimize
+from scipy.optimize import fsolve
 import sys
 sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/Python/PattersonAugmented')
 sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/PythonStabilityMapUtils')
@@ -42,6 +43,7 @@ import Python_to_Matlab
 
 
 import Forces_test
+#from StabilityMapUtils import equation_body as e    # cant be uncommented line 33 is uncommented
 
 
 """
@@ -51,7 +53,7 @@ Propeller Wing Interaction
 inop engines
 Speed
 Altitude
-minimize_in_alpha
+Complete Optimization/ Long_equilibrium/ Long_Equilibrium2
 Forces comparison deactivated
 g.hangar DEPoriginal (different thrust) or original (same thrust)
 flaps
@@ -148,7 +150,7 @@ elif aircraft['model'] == 'ATR':
 
 
     H_base = 0  # in m the altitude
-    V_base = 72           #1.3 * Vsr
+    V_base = 72          #1.3 * Vsr
     beta_base = 0 / 180 * math.pi
     gamma = 0                                                                                                           # previous condition  np.arctan(3 / 100)  # (3/100)/180*np.pi##math.atan(0/87.4)#/180*math.pi # 3% slope gradient # Best climb rate: 6.88m/s vertical @ 87.5m/s = 4.5°gamma, see http://www.atraircraft.com/products_app/media/pdf/Fiche_72-600_Juin-2014.pdf
     R = 000  # in meters the turn radius
@@ -164,7 +166,7 @@ elif aircraft['model'] == 'ATR':
     # --- dictionnary for type of aircraft studied. aircraft: ATR72, version : 'original', 'DEPoriginal', 'DEPnofin'
     g.hangar = {'aircraft': 'ATR72', 'version': 'original'}
 
-    g.VelFlap = 71  # in m/s the maximum velocity at which flap are deployed
+    g.VelFlap = 0 # modificada para que no salte   71  # in m/s the maximum velocity at which flap are deployed
     g.CL0_fl = g.CL0_fl  # / 2   # for take off in no-interaction divide by two
 
 
@@ -225,8 +227,9 @@ print(strout)
 
 
 
-
-g.minimize_in_alpha = False
+g.Complete_Optimization = True
+g.Long_equilibrium = False
+g.Long_equilibrium2 = False
 
 
 
@@ -279,9 +282,9 @@ CstA = True
 if aircraft['model'] == 'ATR':
 
        Velocities = (70, 90 , 110  , 130 , 150)                                                                          #Two first speeds for H = 0 m, last 3 for H=5000m
-       rho_vec = (1.225 , 1.225, 0.736116,  0.736116,  0.736116)                                                   # rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
+       rho_vec = (1.225 , 1.225, 0.736116,  0.736116,  0.736116)                                               # rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
        #a_sound=(340,340,320.529 ,320.529 ,320.529)
-       Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                                                           # Mach= Vel/a
+       Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                                                         # Mach= Vel/a
 
 
 
@@ -436,25 +439,27 @@ elif aircraft['model']=='DECOL':
 
 
 #Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
+#Forces_comparison = Forces_test.Constraints_DEP_body(Coef_base, atmospher, g, PW)
+#Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
 
 
 
 
 
-if g.minimize_in_alpha == False:
+if g.Complete_Optimization == True:
 
 
         #Initialise test and guess vectors
-        if g.nofin==False:
+        if g.nofin == False:
             # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, delta_i]
-            x0=np.array([5*math.pi/180, 0,0,0, 0.00, 0.0, 0.0, 0.0, 0])
-            bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-20/180*math.pi,20/180*math.pi), (-deltaRmax/180*math.pi,deltaRmax/180*math.pi))
+            x0 = np.array([5*math.pi/180, 0, 0, 0, 0.00, 0.0, 0.0, 0.0, 0])
+            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi), (-deltaRmax/180*math.pi, deltaRmax/180*math.pi))
         else:
             # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, delta_i]
-            x0=np.array([7.5*math.pi/180, 0,0,0, 0.00, 0.05, 0.00, 0.00])
-            bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-20/180*math.pi,20/180*math.pi))
+            x0 = np.array([7.5*math.pi/180, 0, 0, 0, 0.00, 0.05, 0.00, 0.00])
+            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi))
 
-        eng_vec = np.array([0.4] * g.N_eng)
+        eng_vec = np.array([0.1] * g.N_eng)
 
 
 
@@ -495,6 +500,7 @@ if g.minimize_in_alpha == False:
         else:
             sys.exit('Non valid optimization method')
 
+        x = k.x
 
 
 
@@ -504,66 +510,134 @@ if g.minimize_in_alpha == False:
 
 
 
+if g.Long_equilibrium == True:
 
-if g.minimize_in_alpha == True:
-
-
+        g.IsPropWing = True
+        g.IsPropWingDrag = True
         #Initialise test and guess vectors
-        if g.nofin == False:
-            # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, gamma, V]
-            x0 = np.array([5*math.pi/180, 0, 0, 0, 0.00, 0.0, 0.0, 0.0, 0, 0, V_base])
-            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2,0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi), (-deltaRmax/180*math.pi, deltaRmax/180*math.pi), (-10/180*math.pi, 10/180*math.pi), (0.5*V_base, 1.5*V_base))
-        else:
-            # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, gamma]
-            x0 = np.array([7.5*math.pi/180, 0, 0, 0, 0.00, 0.05, 0.00, 0.00, V_base])
-            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi), (-10/180*math.pi, 10/180*math.pi), (0.5*V_base, 1.5*V_base))
+        # x =[V, theta, delta_e]
+        x0 = np.array([60, 0, 0])
 
 
 
-        # --- imposed conditions ---
-        # fix = [beta, omega, dx]
-        if R == 0:
-             omega = 0
-        else:
-             omega = V_base * math.cos(gamma) / R
 
-
-        fixtest = np.array([beta_base, omega])
-        dx = 0.8
+        alpha = 8 * np.pi/180
+        dx = 0.5
         dx_vec = np.full(g.N_eng, dx)
 
+        beta = 0
+        p = 0
+        q = 0
+        r = 0
+        phi = 0
+        da = 0
+        dr = 0
+        omega = 0
 
-        fixtest = np.concatenate((fixtest, dx_vec))
 
+        fixtest = np.array((alpha,p,q,r,beta,phi,da,dr))
+
+        fixtest=np.concatenate((fixtest, dx_vec))
 
         # put everything in tuples for passing to functions
         diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
-        dicfobj = (np.copy(fixtest), rho_base, g)
 
-        # --- minimization algorithm ---
-        ## SLSQP
-        if method == 'SLSQP':
-             k = minimize(e.fobjective_minimum_alpha, np.copy(x0), args=dicfobj, bounds=bnds,
-                          constraints={'type': 'eq', 'fun': e.Constraints_minimum_alpha, 'args': diccons},
-                          options={'maxiter': MaxIter, 'disp': True}, tol=tolerance)
-                 
-        elif method == 'trust-interior':
-        ## Trust interior
-             k = minimize(e.fobjective_minimum_alpha, np.copy(x0), args=dicfobj, method='trust-constr', bounds=bnds,
-                          constraints={'type': 'eq', 'fun': e.Constraints_minimum_alpha, 'args': diccons},
-                          options={'maxiter': MaxIter, 'disp': True}, tol=tolerance)
-        else:
-             sys.exit('Non valid optimization method')
+        # --- solving algorithm ---
 
+        k = fsolve(e.Long_equilibrium, x0, args=diccons, xtol=1e-10, maxfev=0, factor=0.1)
+
+
+        # check if constraints are validated
+        constraints_calc = e.Long_equilibrium(k, *diccons)
+        print("\nConstraints")
 
 
         #Reorders vector for leaving them as in the minimization in power case
 
-        gamma = k.x[-2]
-        V_base = k.x[-1]
-        k.x = np.concatenate((k.x[:-2], fixtest[-g.N_eng:]))
-        fixtest = np.array([V_base, fixtest[0], gamma,fixtest[1]])
+        gamma = k[1] - alpha
+        alpha = alpha
+        V = k[0]
+
+
+        #Reorganize everything
+        x1 = np.array((alpha, p, q, r, phi, k[1], da, k[2], dr))
+        x = np.concatenate((x1, fixtest[-g.N_eng:]))
+        fixtest = np.array([V, beta, gamma, omega])
         diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
+
+        # for coherance shall be x = [alpha, p, q ,r, phi, theta, da, de, dr, dx]
+        #                  fixtest = [V, beta, gamma, omega]
+
+
+
+if g.Long_equilibrium2 == True:
+
+
+
+
+    #Initialise test and guess vectors
+    # x =[V, alpha, theta, delta_e, delta_x]
+    x0 = np.array([20, 5*math.pi/180, 0, 0, 0.4])
+
+    if g.IsPropWing:
+         bnds = ((20, 100), (-10*math.pi/180, 25*math.pi/180), (-10/180*math.pi, 25/180*math.pi), (-23/180*math.pi, 13/180*math.pi), ((ThrottleMin, ThrottleMax)))
+    else:
+         bnds = ((20, 100), (-10*math.pi/180, 0.2561481435699163), (-10/180*math.pi, 25/180*math.pi), (-23/180*math.pi, 13/180*math.pi), ((ThrottleMin, ThrottleMax)))
+
+    #For maximizing speed (instead of minimizing it for stall speed), function turn to 1/f, anyway is not well defined so
+    #    x0 = np.array([150, 5*math.pi/180, 0, 0, 0.99]) and
+    #   bnds = ((100, 200), (-10*math.pi/180, 25*math.pi/180), (-10/180*math.pi, 25/180*math.pi), (-23/180*math.pi, 13/180*math.pi), ((0.96, ThrottleMax)))
+
+
+    # --- imposed conditions ---
+    gamma = 0
+    beta = 0
+    p = 0
+    q = 0
+    r = 0
+    phi = 0
+    da = 0
+    dr = 0
+    omega = 0
+
+
+    fixtest = np.array([gamma, beta, p, q, r, phi, da, dr, omega])
+
+
+    # put everything in tuples for passing to functions
+    diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)  # fix, CoefMatrix,Velocities, rho, g
+
+
+
+
+    # --- minimization algorithm ---
+    ## SLSQP
+    if method == 'SLSQP':
+        k = minimize(e.V_min, np.copy(x0), args=diccons, bounds=bnds,
+                     constraints={'type': 'eq', 'fun': e.Long_equilibrium2, 'args': diccons},
+                     options={'maxiter': MaxIter, 'disp': True}, tol=tolerance)
+    elif method == 'trust-interior':
+        ## Trust interior
+        k = minimize(e.V_min, np.copy(x0), args=diccons, method='trust-constr', bounds=bnds,
+                     constraints={'type': 'eq', 'fun': e.Long_equilibrium2, 'args': diccons},
+                     options={'maxiter': MaxIter, 'disp': True}, tol=tolerance)
+    else:
+        sys.exit('Non valid optimization method')
+
+    #leaving things like before
+
+    constraints_calc = e.Long_equilibrium2(k.x, *diccons)
+    print("\nConstraints")
+
+
+    x1 = np.array((k.x[1], p, q, r, phi, k.x[2], da, k.x[3], dr))
+    x = np.concatenate((x1, k.x[-g.N_eng:]))
+
+    fixtest = np.array([k.x[0], beta, gamma, omega])
+    diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
+
+    # for coherance shall be x = [alpha, p, q ,r, phi, theta, da, de, dr, dx]
+    #                  fixtest = [V, beta, gamma, omega]
 
 
 
@@ -592,7 +666,7 @@ def printx(x, fix, atmo, g, PW):
     V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[3] * g.PosiEng
 
     if g.IsPropWing:
-        if V <= g.VelFlap:
+        if V <= g.VelFlap or g.FlapDefl != 0:
             PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, fix[1], x[1], V, x[3])
         else:
             PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, fix[1], x[1], V, x[3])
@@ -603,7 +677,7 @@ def printx(x, fix, atmo, g, PW):
 
 
 
-printx(k.x, fixtest, atmospher, g, PW)
+printx(x, fixtest, atmospher, g, PW)
 
 
 
@@ -620,7 +694,7 @@ printx(k.x, fixtest, atmospher, g, PW)
 
 
 # check if constraints are validated
-constraints_calc = e.Constraints_DEP(k.x, *diccons)
+constraints_calc = e.Constraints_DEP(x, *diccons)
 print("\nConstraints")
 print(constraints_calc)
 
@@ -642,7 +716,7 @@ print(constraints_calc)
 
 # ---- Compute jacobian -----
 if gojac == True:
-    jac = e.Jac_DEP(k.x, *diccons, 0.01)
+    jac = e.Jac_DEP(x, *diccons, 0.01)
 
 
     #jacCol=[ V, beta, gamma, alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, delta_i]
@@ -696,20 +770,20 @@ print("Number of engine : {0} \nNumber of inoperative engines : {1}".format(g.N_
 
 
 
-Aero_Derivatives, Aero_Derivatives_adim = derivatives_calc.aero_coefficients(k.x, fixtest, Coef_base, atmospher, g, PW)
+Aero_Derivatives, Aero_Derivatives_adim = derivatives_calc.aero_coefficients(x, fixtest, Coef_base, atmospher, g, PW)
 
 
 
 Eigenvalues_info , Eigenvalues_info_adim = Eigenvalues_manually.Eig_info(Longieigvals,Lateigvals,g,fixtest)
 
-Eigenvalues = Eigenvalues_manually.Eigenvalues(Aero_Derivatives_adim, k.x, fixtest, atmospher, g, PW, CoefMatrix)
+Eigenvalues = Eigenvalues_manually.Eigenvalues(Aero_Derivatives_adim, x, fixtest, atmospher, g, PW, CoefMatrix)
 
 
 
 
 start = time.time()
 
-Xsample_longitudinal, Xsample_lateral, CD_sample, CY_sample, CL_sample, Cl_sample, Cm_sample, Cn_sample = Apricott.Sample_generation(k.x, fixtest, Coef_base, atmospher, g, PW)
+Xsample_longitudinal, Xsample_lateral, CD_sample, CY_sample, CL_sample, Cl_sample, Cm_sample, Cn_sample = Apricott.Sample_generation(x, fixtest, Coef_base, atmospher, g, PW)
 
 end = time.time()
 print(end - start)
