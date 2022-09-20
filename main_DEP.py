@@ -19,6 +19,7 @@ import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from scipy.optimize import fsolve
+from scipy.optimize import least_squares
 import sys
 sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/Python/PattersonAugmented')
 sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/PythonStabilityMapUtils')
@@ -40,10 +41,11 @@ import Eigenvalues_manually
 import derivatives_calc
 import Apricott
 import Python_to_Matlab
+import CL_figure
 
 
 import Forces_test
-#from StabilityMapUtils import equation_body as e    # cant be uncommented line 33 is uncommented
+from StabilityMapUtils import Longitudinal
 
 
 """
@@ -53,7 +55,7 @@ Propeller Wing Interaction
 inop engines
 Speed
 Altitude
-Complete Optimization/ Long_equilibrium/ Long_Equilibrium2
+Complete Optimization/ Long_equilibrium
 Forces comparison deactivated
 g.hangar DEPoriginal (different thrust) or original (same thrust)
 flaps
@@ -150,7 +152,7 @@ elif aircraft['model'] == 'ATR':
 
 
     H_base = 0  # in m the altitude
-    V_base = 72          #1.3 * Vsr
+    V_base = 70          #1.3 * Vsr
     beta_base = 0 / 180 * math.pi
     gamma = 0                                                                                                           # previous condition  np.arctan(3 / 100)  # (3/100)/180*np.pi##math.atan(0/87.4)#/180*math.pi # 3% slope gradient # Best climb rate: 6.88m/s vertical @ 87.5m/s = 4.5°gamma, see http://www.atraircraft.com/products_app/media/pdf/Fiche_72-600_Juin-2014.pdf
     R = 000  # in meters the turn radius
@@ -208,8 +210,8 @@ elif aircraft['model'] == 'ATR':
 
 
 mpl.rcParams['font.family'] = ['serif']
-mpl.rcParams['font.serif'] = ['Latin Modern Roman'] #for legend / FreeSerif
-mpl.rcParams["mathtext.fontset"] = "stix" # for math in legend
+mpl.rcParams['font.serif'] = ['Latin Modern Roman']  # for legend / FreeSerif
+mpl.rcParams["mathtext.fontset"] = "stix"  # for math in legend
 mpl.rcParams["font.size"] = 16 
 
 
@@ -227,9 +229,10 @@ print(strout)
 
 
 
-g.Complete_Optimization = True
-g.Long_equilibrium = False
-g.Long_equilibrium2 = False
+#Options
+g.Complete_Optimization = False
+g.Long_equilibrium = True
+
 
 
 
@@ -281,10 +284,10 @@ CstA = True
 
 if aircraft['model'] == 'ATR':
 
-       Velocities = (70, 90 , 110  , 130 , 150)                                                                          #Two first speeds for H = 0 m, last 3 for H=5000m
-       rho_vec = (1.225 , 1.225, 0.736116,  0.736116,  0.736116)                                               # rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
-       #a_sound=(340,340,320.529 ,320.529 ,320.529)
-       Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                                                         # Mach= Vel/a
+       Velocities = (70, 90, 110, 130, 150)                                          #Two first speeds for H = 0 m, last 3 for H=5000m
+       rho_vec = (1.225, 1.225, 0.736116,  0.736116,  0.736116)                      #rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
+       # a_sound = (340, 340, 320.529 ,320.529, 320.529)
+       Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                               # Mach= Vel/a
 
 
 
@@ -321,7 +324,7 @@ if g.hangar['aircraft'] == 'ATR72':
 #                  'ATR72_SI_MTOW_Control_Cruise.stab']
         path = 'ATR72_SI_MTOW_FinLess_STAB/'
         filenameNoFin = [path+'ATR72_FinLess_mach1.stab', path+'ATR72_FinLess_mach2.stab', path+'ATR72_FinLess_mach3.stab',
-                   path+'ATR72_FinLess_mach4.stab', path+'ATR72_FinLess_mach5.stab']
+                   path +'ATR72_FinLess_mach4.stab', path+'ATR72_FinLess_mach5.stab']
         Matrix = ReadFileUtils.ReadStabCoef(filenameNoFin)
         
 
@@ -347,7 +350,7 @@ print("Adjusting Kf, Kh and VT size")
 print("New Kf and Kh")
 print(g.AdjustVT())
 
-CoefMatrix=g.NicolosiCoef(Matrix[:, 1:], Mach)
+CoefMatrix = g.NicolosiCoef(Matrix[:, 1:], Mach)
         
 
 # --- Interpol coefficients for test case ---
@@ -426,21 +429,12 @@ elif aircraft['model']=='DECOL':
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 #Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
 #Forces_comparison = Forces_test.Constraints_DEP_body(Coef_base, atmospher, g, PW)
 #Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
+
+
+
 
 
 
@@ -453,11 +447,11 @@ if g.Complete_Optimization == True:
         if g.nofin == False:
             # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, delta_i]
             x0 = np.array([5*math.pi/180, 0, 0, 0, 0.00, 0.0, 0.0, 0.0, 0])
-            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi), (-deltaRmax/180*math.pi, deltaRmax/180*math.pi))
+            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-23/180*math.pi, 13/180*math.pi), (-deltaRmax/180*math.pi, deltaRmax/180*math.pi))
         else:
             # x =[alpha, p, q, r, phi, theta, delta_a, delta_e, delta_i]
             x0 = np.array([7.5*math.pi/180, 0, 0, 0, 0.00, 0.05, 0.00, 0.00])
-            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-20/180*math.pi, 20/180*math.pi))
+            bnds = ((-5*math.pi/180, alphamax*math.pi/180), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-phimax/180*math.pi, phimax/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-30/180*math.pi, 30/180*math.pi), (-23/180*math.pi, 13/180*math.pi))
 
         eng_vec = np.array([0.1] * g.N_eng)
 
@@ -507,138 +501,42 @@ if g.Complete_Optimization == True:
 
 
 
+if g.Long_equilibrium:
+
+    """
+     Function for longitudinal analysis.
+     * 6 variables can be played with : alpha, gamma, V, de, dx, theta
+     * There are a total of 4 equations, two for forces in axes x and z, one for moments, and one relating gamma,
+       alpha and theta.
+
+      Function has two ways of working:
+     * If two variables are defined among these 6, then the function will give away the value of the other four.
+     * If zero, or one variable are defined, then the function will give a set of 6 variables that optimize
+       a given function that must be defined.
+     * If more than two variables are defined problem may be over-constrained and no solution will be given.
 
 
+     For defining a variable just be careful to give it a value inside the possible limits.
+     For leaving a variable undefined just define it as a string.
 
-if g.Long_equilibrium == True:
+    Examples:
+    * By just defining gamma = 0 the function will find the minimum speed (stall speed) at the altitude given (while the
+      objective function is V_min) (OPTIMIZATION PERFORMED).
+    * By defining V and dx    the function will find the set of (alpha de gamma theta) to accomplish equilibrium.
+    * By defining V and gamma the function will find the set of (alpha de dx    theta) to accomplish equilibrium.
+    """
 
-        g.IsPropWing = True
-        g.IsPropWingDrag = True
-        #Initialise test and guess vectors
-        # x =[V, theta, delta_e]
-        x0 = np.array([60, 0, 0])
+    #Long_variables;   (to define a combination of 2 or less)
+    alpha_long = "TS"
+    gamma_long = 0
+    V_long = 50
+    de_long = "TS"
+    dx_long = "TS"
+    theta_long = "TS"
 
+    vars = [alpha_long, gamma_long, V_long, de_long, dx_long, theta_long]
 
-
-
-        alpha = 8 * np.pi/180
-        dx = 0.5
-        dx_vec = np.full(g.N_eng, dx)
-
-        beta = 0
-        p = 0
-        q = 0
-        r = 0
-        phi = 0
-        da = 0
-        dr = 0
-        omega = 0
-
-
-        fixtest = np.array((alpha,p,q,r,beta,phi,da,dr))
-
-        fixtest=np.concatenate((fixtest, dx_vec))
-
-        # put everything in tuples for passing to functions
-        diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
-
-        # --- solving algorithm ---
-
-        k = fsolve(e.Long_equilibrium, x0, args=diccons, xtol=1e-10, maxfev=0, factor=0.1)
-
-
-        # check if constraints are validated
-        constraints_calc = e.Long_equilibrium(k, *diccons)
-        print("\nConstraints")
-
-
-        #Reorders vector for leaving them as in the minimization in power case
-
-        gamma = k[1] - alpha
-        alpha = alpha
-        V = k[0]
-
-
-        #Reorganize everything
-        x1 = np.array((alpha, p, q, r, phi, k[1], da, k[2], dr))
-        x = np.concatenate((x1, fixtest[-g.N_eng:]))
-        fixtest = np.array([V, beta, gamma, omega])
-        diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
-
-        # for coherance shall be x = [alpha, p, q ,r, phi, theta, da, de, dr, dx]
-        #                  fixtest = [V, beta, gamma, omega]
-
-
-
-if g.Long_equilibrium2 == True:
-
-
-
-
-    #Initialise test and guess vectors
-    # x =[V, alpha, theta, delta_e, delta_x]
-    x0 = np.array([20, 5*math.pi/180, 0, 0, 0.4])
-
-    if g.IsPropWing:
-         bnds = ((20, 100), (-10*math.pi/180, 25*math.pi/180), (-10/180*math.pi, 25/180*math.pi), (-23/180*math.pi, 13/180*math.pi), ((ThrottleMin, ThrottleMax)))
-    else:
-         bnds = ((20, 100), (-10*math.pi/180, 0.2561481435699163), (-10/180*math.pi, 25/180*math.pi), (-23/180*math.pi, 13/180*math.pi), ((ThrottleMin, ThrottleMax)))
-
-    #For maximizing speed (instead of minimizing it for stall speed), function turn to 1/f, anyway is not well defined so
-    #    x0 = np.array([150, 5*math.pi/180, 0, 0, 0.99]) and
-    #   bnds = ((100, 200), (-10*math.pi/180, 25*math.pi/180), (-10/180*math.pi, 25/180*math.pi), (-23/180*math.pi, 13/180*math.pi), ((0.96, ThrottleMax)))
-
-
-    # --- imposed conditions ---
-    gamma = 0
-    beta = 0
-    p = 0
-    q = 0
-    r = 0
-    phi = 0
-    da = 0
-    dr = 0
-    omega = 0
-
-
-    fixtest = np.array([gamma, beta, p, q, r, phi, da, dr, omega])
-
-
-    # put everything in tuples for passing to functions
-    diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)  # fix, CoefMatrix,Velocities, rho, g
-
-
-
-
-    # --- minimization algorithm ---
-    ## SLSQP
-    if method == 'SLSQP':
-        k = minimize(e.V_min, np.copy(x0), args=diccons, bounds=bnds,
-                     constraints={'type': 'eq', 'fun': e.Long_equilibrium2, 'args': diccons},
-                     options={'maxiter': MaxIter, 'disp': True}, tol=tolerance)
-    elif method == 'trust-interior':
-        ## Trust interior
-        k = minimize(e.V_min, np.copy(x0), args=diccons, method='trust-constr', bounds=bnds,
-                     constraints={'type': 'eq', 'fun': e.Long_equilibrium2, 'args': diccons},
-                     options={'maxiter': MaxIter, 'disp': True}, tol=tolerance)
-    else:
-        sys.exit('Non valid optimization method')
-
-    #leaving things like before
-
-    constraints_calc = e.Long_equilibrium2(k.x, *diccons)
-    print("\nConstraints")
-
-
-    x1 = np.array((k.x[1], p, q, r, phi, k.x[2], da, k.x[3], dr))
-    x = np.concatenate((x1, k.x[-g.N_eng:]))
-
-    fixtest = np.array([k.x[0], beta, gamma, omega])
-    diccons = (np.copy(fixtest), np.copy(Coef_base), atmospher, g, PW)
-
-    # for coherance shall be x = [alpha, p, q ,r, phi, theta, da, de, dr, dx]
-    #                  fixtest = [V, beta, gamma, omega]
-
+    k, x, fixtest = Longitudinal.Long_Equilibrium(Coef_base, atmospher, g, PW, vars)
 
 
 
@@ -777,6 +675,11 @@ Aero_Derivatives, Aero_Derivatives_adim = derivatives_calc.aero_coefficients(x, 
 Eigenvalues_info , Eigenvalues_info_adim = Eigenvalues_manually.Eig_info(Longieigvals,Lateigvals,g,fixtest)
 
 Eigenvalues = Eigenvalues_manually.Eigenvalues(Aero_Derivatives_adim, x, fixtest, atmospher, g, PW, CoefMatrix)
+
+
+
+
+Xsample_longitudinal, CD_sample, CL_sample, Cm_sample = CL_figure.Sample_generation(x, fixtest, Coef_base, atmospher, g, PW)
 
 
 

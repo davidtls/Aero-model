@@ -430,10 +430,10 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
 
 
     # --- Now prepare variables for equations ---
-    V = 49.729
-    alpha = 0.2561481435699163
-    de = -0.4014
-    dx = 0.5667
+    V =  70
+    alpha = 0.10723828379856166
+    de =  -0.10514575695526691
+    dx =   0.30905799124088
 
 
 
@@ -561,7 +561,7 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     for i in range(int(g.N_eng)):
          x = np.append(x, dx)
 
-    printx(x, fixtest, atmo, g, PropWing)
+    #printx(x, fixtest, atmo, g, PropWing)
 
     CL = -F[2]/(0.5*rho*V**2 * g.S)
     CD = -F[0]/(0.5*rho*V**2 * g.S)

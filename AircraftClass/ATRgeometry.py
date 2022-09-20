@@ -85,8 +85,8 @@ class data:
 
 
     # --- Propeller-Wing activation ---
-    IsPropWing = True
-    IsPropWingDrag = True
+    IsPropWing = False
+    IsPropWingDrag = False
 
 
     # --- Distances ---
@@ -102,9 +102,12 @@ class data:
     # ---Unique coeff ---
     aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
     aht2 = 0.78082       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
-    Cm_alpha_wb = 1.173310  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
+    Cm_alpha_wb = 1.173310 # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
     # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     # Cm_alpha_fus =
+
+
+
 
 
     # alpha=0 coeff
@@ -115,7 +118,7 @@ class data:
     CL0 = 0.516688      # Total CL0 including horizontal tail
     CL0_HT = -0.0284    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
     Cm0 = 0.035015
-    Cm0_wo_HT = -0.129536  # Cm0 of aircraft less horizontal tail
+    Cm0_wo_HT = -0.129536    # Cm0 of aircraft less horizontal tail
 
 
     # Drag polar without patterson. Interpolated from VSP v26, updated VSPAERO

@@ -64,11 +64,11 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
         alphamax = 25  # in degree, stall bound for trimming
         deltaRmax = 30  # in degree
         ThrottleMax = 1  # max thrust level
-        ThrottleMin = 1e-9  # min thruttle, don't accept 0 thrust
-        V=fix[0]
+        ThrottleMin = 1e-9  # min throttle, don't accept 0 thrust
+        V = fix[0]
 
         #               alfa                            p            q           r                     phi                                     theta                        delta_a                                delta_e                                delta_r
-        # bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-20/180*math.pi,20/180*math.pi), (-deltaRmax/180*math.pi,deltaRmax/180*math.pi))
+        # bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-23/180*math.pi,13/180*math.pi), (-deltaRmax/180*math.pi,deltaRmax/180*math.pi))
 
 
 
@@ -78,7 +78,7 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
              (-10 / 180 * math.pi, 10 / 180 * math.pi))
 
 
-        limfix = ( ((V-0.9)/V, (V+0.9)/V), (-5 / 180 * math.pi, 5 / 180 * math.pi), (-5 / 180 * math.pi, 5 / 180 * math.pi), (-0.2, 0.2))
+        limfix = ( ((V-10)/V, (V+10)/V), (-5 / 180 * math.pi, 5 / 180 * math.pi), (-5 / 180 * math.pi, 5 / 180 * math.pi), (-0.2, 0.2))
 
 
 
@@ -113,13 +113,13 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
      #For longitudinal
-     bnds_eng_long=((ThrottleMin,ThrottleMax))
-     bnds_long=bnds+(bnds_eng_long,) + limfix
+     bnds_eng_long = ((ThrottleMin,ThrottleMax))
+     bnds_long = bnds+(bnds_eng_long,) + limfix
 
      #For Lateral
      bnds_eng_lat = tuple()
-     bnds_eng_lat=((x[10]-0.25,x[10]+0.25))
-     bnds_lat=bnds+(bnds_eng_lat,) + limfix
+     bnds_eng_lat = ((x[10]-0.25, x[10]+0.25))
+     bnds_lat = bnds+(bnds_eng_lat,) + limfix
 
 
      x = np.concatenate((x, fix))
@@ -151,14 +151,12 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
      #IN LONGITUDINAL, ALL ENGINES ARE VARIED IN THE SAME WAY, dx FROM 0 TO 1
 
 
-     variations=5
-     variables=5
-     testvector=np.zeros((len(x),(variations**variables)))
+     variations = 5
+     variables = 5
+     testvector = np.zeros((len(x), (variations**variables)))
      Xsample_longitudinal = np.zeros((variables, variations ** variables))
 
-     CD_sample = np.zeros((variations**variables))
-     CL_sample = np.zeros((variations**variables))
-     Cm_sample = np.zeros((variations**variables))
+
 
      Coefs=np.zeros((6,(variations**variables)))
 
@@ -179,7 +177,7 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
                             #ENGINES
                             testvector[-(g.N_eng+4):-4, i*variations**4+j*variations**3+k*variations**2+p*variations+q] = bnds_long[-5][0]+p*(bnds_long[-5][1] - bnds_long[-5][0])/(variations-1)
 
-                            testvector[-4 ,i*variations**4+j*variations**3+k*variations**2+p*variations+q] = bnds_long[-4][0]+q*(bnds_long[-4][1] - bnds_long[-4][0])/(variations-1)
+                            testvector[-4, i*variations**4+j*variations**3+k*variations**2+p*variations+q] = bnds_long[-4][0]+q*(bnds_long[-4][1] - bnds_long[-4][0])/(variations-1)
 
                             Coefs[:, i*variations**4+j*variations**3+k*variations**2+p*variations+q] = Constraints_DEP(testvector[:, i*variations**4+j*variations**3+k*variations**2+p*variations+q], CoefMatrix, atmo, g, PropWing,V)
 
@@ -246,9 +244,6 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
 
      Xsample_lateral = np.zeros((variables2, variations2 ** variables2))
 
-     CY_sample = np.zeros((variations2**variables2))
-     Cl_sample = np.zeros((variations2**variables2))
-     Cn_sample = np.zeros((variations2**variables2))
 
      Coefs2 = np.zeros((6, (variations2 ** variables2)))
 
