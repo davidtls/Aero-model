@@ -10,60 +10,99 @@ Read coef files from VSPaero and xfoil/xflr5 style
 import numpy as np
 import linecache
 import sys
+from scipy.interpolate import interp1d
 
 def ReadAlpha0(file):
     ''' Go get the alpha 0 from a polar file'''
-    f=open(file,'r')
+    f = open(file, 'r')
     
-    startInterpol=False
+    startInterpol = False
     InterpolCompleted = False
     
-    CLTemp=0
-    alphaTemp=0
+    CLTemp = 0
+    alphaTemp = 0
     
     for lines in f:
-        words=lines.split()
-        if len(words) >=2:
+        words = lines.split()
+        if len(words) >= 2:
             if words[0] == '-------':
                 # our data start next line 
                 startInterpol = True
                 continue
             
             if startInterpol == True:
-                if float(words[1])>0:
+                if float(words[1]) > 0:
                     # need to interpolated
-                    a=(float(words[1])-CLTemp)/(float(words[0])-alphaTemp)
+                    a = (float(words[1])-CLTemp)/(float(words[0])-alphaTemp)
                     Alpha0 = alphaTemp - CLTemp / a
                     InterpolCompleted = True
                     break
                 else:
-                    CLTemp=float(words[1])
-                    alphaTemp=float(words[0])
+                    CLTemp = float(words[1])
+                    alphaTemp = float(words[0])
     if InterpolCompleted == True:
         return Alpha0
     else:
         sys.exit('Could not interpole alpha0 in polar file : ' + file)
+
+
+
+
+def ReadAlpha0_Improved(file):
+    ''' Go get the alpha 0 from a polar file'''
+    f = open(file, 'r')
+
+    startLog = False
+
+    CLTemp = np.array([])
+    alphaTemp = np.array([])
+
+    for lines in f:
+        words = lines.split()
+        if len(words) >= 2:
+            if words[0] == '-------':
+                # our data start next line
+                startLog = True
+                continue
+
+            if startLog == True:
+                alphaTemp = np.append(alphaTemp, float(words[0]))
+                CLTemp = np.append(CLTemp, float(words[1]))
+
+    interpolation = interp1d(alphaTemp, CLTemp)
+
+    Alpha0 = - interpolation(0)/( (interpolation(4) - interpolation(-5))/ (4 - -5))
+
+
+
+
+    return Alpha0
+
+
+
+
+
         
 def ReadAirfoilDrag(file):
     ''' Go get the total drag CD from a polar file'''
-    f=open(file,'r')
+    f = open(file, 'r')
     
-    startLog=False
+    startLog = False
     
-    CDTemp=np.array([])
-    alphaTemp=np.array([])
+    CDTemp = np.array([])
+    alphaTemp = np.array([])
     
     for lines in f:
-        words=lines.split()
-        if len(words) >=2:
+        words = lines.split()
+        if len(words) >= 2:
             if words[0] == '-------':
                 # our data start next line 
                 startLog = True
                 continue
             
             if startLog == True:
-                alphaTemp=np.append(alphaTemp,float(words[0]))
-                CDTemp = np.append(CDTemp,float(words[2]))
+                alphaTemp = np.append(alphaTemp, float(words[0]))
+                CDTemp = np.append(CDTemp, float(words[2]))
                 
     return alphaTemp, CDTemp
 
@@ -75,32 +114,32 @@ def ReadSectionCl(filename, OutputAoa=False):
 
     extension = '.fem'
     
-    Keywords =('Wing', 'Surface:', 'SpanStations:', 'Wing')
-    Wingplatform = ('1','2')
+    Keywords = ('Wing', 'Surface:', 'SpanStations:', 'Wing')
+    Wingplatform = ('1', '2')
     
-    f=open(filename+extension,'r')
+    f = open(filename+extension, 'r')
     
     CurrentLine = 1
-    MySec = np.array([]).reshape(0,4)
-    NSection=0
+    MySec = np.array([]).reshape(0, 4)
+    NSection = 0
     WingNumber = 0
     
     for line in f:
         # find 'Wing Surface : x'
         words = line.split()
-        if len(words)>= 2:
-            if words[0] == "AoA_"and WingNumber<2:
-                aoa = float(words[1])/180*np.pi # angle of attack analysed
-            if words[0]==Keywords[0]:
-                if words[1]==Keywords[1]:
+        if len(words) >= 2:
+            if words[0] == "AoA_"and WingNumber < 2:
+                aoa = float(words[1])/180*np.pi  # angle of attack analysed
+            if words[0] == Keywords[0]:
+                if words[1] == Keywords[1]:
                     #Wing section detected update wing counter
                     WingNumber = WingNumber+1
-            if words[0]==Keywords[2]:
-                NSection = int(words[1]) #Get the SpanStation
+            if words[0] == Keywords[2]:
+                NSection = int(words[1])  # Get the SpanStation
                 
-            if words[0]=='Wing' and words[1]=='XLE_ORIG' and WingNumber<3:
+            if words[0] == 'Wing' and words[1] == 'XLE_ORIG' and WingNumber < 3:
                 # call the readcoef function and stack the data in MySec
-                MySec = np.vstack([MySec, ReadCoef(NSection,CurrentLine,filename+extension)])
+                MySec = np.vstack([MySec, ReadCoef(NSection, CurrentLine, filename+extension)])
         
         #Update line counter
         CurrentLine = CurrentLine+1
@@ -117,52 +156,52 @@ def ReadSectionCLslope(filename):
     
     extension = '.fem'
     
-    Keywords =('Wing', 'Surface:', 'SpanStations:', 'Wing')
-    Wingplatform = ('1','2')
+    Keywords = ('Wing', 'Surface:', 'SpanStations:', 'Wing')
+    Wingplatform = ('1', '2')
     
-    f=open(filename+extension,'r')
+    f = open(filename+extension, 'r')
     
     CurrentLine = 1
-    MySec = np.array([]).reshape(0,4)
-    MySec1 =np.array([]).reshape(0,4)
-    NSection=0
+    MySec = np.array([]).reshape(0, 4)
+    MySec1 = np.array([]).reshape(0, 4)
+    NSection = 0
     WingNumber = 0
     AoA = []
     
     for line in f:
         # find 'Wing Surface : x'
         words = line.split()
-        if len(words)>= 2:
+        if len(words) >= 2:
             if words[0] == "Mach_":
                 #Save mach number analysed
                 Mach = words[1]
             if words[0] == "AoA_":
-                if len(AoA)<3:
-                    AoA.append(float(words[1])/180*np.pi) # angle of attack analysed
-                    WingNumber = 0 # re-initialize the counter
-            if len(AoA)==1:
-                if words[0]==Keywords[0]:
-                    if words[1]==Keywords[1]:
+                if len(AoA) < 3:
+                    AoA.append(float(words[1])/180*np.pi)  # angle of attack analysed
+                    WingNumber = 0  # re-initialize the counter
+            if len(AoA) == 1:
+                if words[0] == Keywords[0]:
+                    if words[1] == Keywords[1]:
                         #Wing section detected update wing counter
                         WingNumber = WingNumber+1
-                if words[0]==Keywords[2]:
-                    NSection = int(words[1]) #Get the SpanStation
+                if words[0] == Keywords[2]:
+                    NSection = int(words[1])  # Get the SpanStation
                 
-                if words[0]=='Wing' and words[1]=='XLE_ORIG' and WingNumber<3:
+                if words[0] == 'Wing' and words[1] == 'XLE_ORIG' and WingNumber < 3:
                     # call the readcoef function and stack the data in MySec
-                    MySec = np.vstack([MySec, ReadCoef(NSection,CurrentLine,filename+extension)])
+                    MySec = np.vstack([MySec, ReadCoef(NSection, CurrentLine, filename+extension)])
         
-            elif len(AoA)==2:
-                if words[0]==Keywords[0]:
-                    if words[1]==Keywords[1]:
+            elif len(AoA) == 2:
+                if words[0] == Keywords[0]:
+                    if words[1] == Keywords[1]:
                         #Wing section detected update wing counter
                         WingNumber = WingNumber+1
-                if words[0]==Keywords[2]:
-                    NSection = int(words[1]) #Get the SpanStation
+                if words[0] == Keywords[2]:
+                    NSection = int(words[1])  # Get the SpanStation
                 
-                if words[0]=='Wing' and words[1]=='XLE_ORIG' and WingNumber<3:
+                if words[0] == 'Wing' and words[1] == 'XLE_ORIG' and WingNumber < 3:
                     # call the readcoef function and stack the data in MySec
-                    MySec1 = np.vstack([MySec1, ReadCoef(NSection,CurrentLine,filename+extension)])
+                    MySec1 = np.vstack([MySec1, ReadCoef(NSection, CurrentLine, filename+extension)])
                     
         #Update line counter
         CurrentLine = CurrentLine+1
@@ -171,13 +210,13 @@ def ReadSectionCLslope(filename):
     
     # We have now two Cl distribution over the entire wing.
     #Computing the lift slope and returning the section lift slope using matrix form
-    if (AoA[0] - AoA[1])!= 0 :
+    if (AoA[0] - AoA[1]) != 0:
         SectLiftSlope = np.copy(MySec)
-        SectLiftSlope[:,-1] = 1/(AoA[0] - AoA[1])*(MySec[:,-1]-MySec1[:,-1])
+        SectLiftSlope[:, -1] = 1/(AoA[0] - AoA[1])*(MySec[:, -1]-MySec1[:, -1])
         LiftAlpha0 = np.copy(MySec)
-        LiftAlpha0[:,-1] = 1/(AoA[0] - AoA[1])*(-AoA[1]*MySec[:,-1]+AoA[0]*MySec1[:,-1])
+        LiftAlpha0[:, -1] = 1/(AoA[0] - AoA[1])*(-AoA[1]*MySec[:, -1]+AoA[0]*MySec1[:, -1])
         SectAoAZero = np.copy(MySec)
-        SectAoAZero[:,-1] = -LiftAlpha0[:,-1] / SectLiftSlope[:,-1]
+        SectAoAZero[:, -1] = -LiftAlpha0[:, -1] / SectLiftSlope[:, -1]
     else:
         sys.exit('AoA[0] -AoA[1] = 0, not possible to compute lift slope')
 #    SectLiftSlope = np.copy(MySec)
@@ -189,21 +228,21 @@ def ReadSectionCLslope(filename):
 
     # readcoef function
 def ReadCoef(Nsec, line, filename):
-    CL=23 # colum where is the Cl
-    YLE=2 # Y leading edge
-    Ch = 12 # Chord col
-    A = 11 # Area
-    Dlign = 1 # offset
+    CL = 23  # colum where is the Cl
+    YLE = 2  # Y leading edge
+    Ch = 12  # Chord col
+    A = 11  # Area
+    Dlign = 1  # offset
     Start = Dlign + line
-    SecCl = np.zeros((Nsec*1,4)) #will contain YLEposition, Area, Cl
+    SecCl = np.zeros((Nsec*1, 4))  # will contain YLEposition, Area, chord, Cl
     
     for i in range(Nsec):
         CurrLine = linecache.getline(filename, Start + i)
         words = CurrLine.split()
-        SecCl[i,0] = float(words[YLE])
-        SecCl[i,1] = float(words[A])
-        SecCl[i,2] = float(words[Ch])
-        SecCl[i,3] = float(words[CL])
+        SecCl[i, 0] = float(words[YLE])
+        SecCl[i, 1] = float(words[A])
+        SecCl[i, 2] = float(words[Ch])
+        SecCl[i, 3] = float(words[CL])
     
     return SecCl
 
@@ -216,19 +255,19 @@ def readstabfile(filename,):
 #    lign=(49,50,51,52,53,54)
 #    byte=8
     
-    CL=[]
-    CD=[]
-    CY=[]
-    Cl=[]
-    Cm=[]
-    Cn=[]
+    CL = []
+    CD = []
+    CY = []
+    Cl = []
+    Cm = []
+    Cn = []
     
-    CoefOrder=[]
+    CoefOrder = []
     
     for lines in file:
-        words=lines.split()
+        words = lines.split()
         
-        if len(words)>=2:
+        if len(words) >= 2:
             
             # coefficient order
             if words[0] == 'Coef':
@@ -292,14 +331,14 @@ def readstabfile(filename,):
     
     # ----- Put into matrices 
     
-    Ab=np.array([CD,CY,CL,Cl,Cm,Cn]) # put it back in order such that (u, v, w, p, q, r)
+    Ab = np.array([CD, CY, CL, Cl, Cm, Cn])  # put it back in order such that (u, v, w, p, q, r)
     
     return Ab
 
 def ReadStabCoef(filename):
     #function takes a list of filenames and read out all the stab files and stack them in an array
-    A=readstabfile(filename[0])
-    for i in range(1,len(filename)):
-        A=np.vstack((A,readstabfile(filename[i])))
+    A = readstabfile(filename[0])
+    for i in range(1, len(filename)):
+        A = np.vstack((A, readstabfile(filename[i])))
         
     return A

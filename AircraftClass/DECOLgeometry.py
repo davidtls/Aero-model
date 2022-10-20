@@ -90,8 +90,7 @@ class data:
 
 
     # --- Distances ---
-    z_m = 0.075  # IGUAL ES 0.075 approximate vertical distance between engine and CG. Propellers is above. Computed with OpenVSP
-    z_h_w = 0.025  # vertical distance from the horizontal tail 1/4 point to the propeller axis. Computed with OpenVSP
+    z_h_w = 0.025  # vertical distance from the horizontal tail 1/4 point to the propeller axis. Computed with OpenVSP. Positive if tail is over
     lh = 1.16575    # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
     lh2 = 0.942  # Horizontal distance from the wing trailing edge to the horizontal tail leading edge. Computed with OpenVSP
     K_e = 1.44   # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
@@ -175,6 +174,7 @@ class data:
     Files = ['cldistribution', 'polar', 'flappolar', 'aileronpolar']  # best to replace the value
     alphaVSP = 0/180*np.pi
     PolarFlDeflDeg = 5
+    PolarAilDeflDeg = 5
 
 
 
@@ -275,24 +275,31 @@ class data:
                 self.Dp = (self.b/2-self.FusWidth/2)/(N_eng/2+dfus-0.5+(N_eng/2-1)*dprop)
             
             self.Sp = self.Dp**2/4*math.pi
-            self.xp = self.Dp/2
+            self.x_offset = self.Dp/2     #This is distance from propeller to leading edge
             self.step_y = self.Dp+dprop*self.Dp
+
             
             if TipClearance == True:
-                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2, self.step_y)
+                self.yp = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2, self.step_y)
             else:
-                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2+self.Dp/2, self.step_y)
+                self.yp = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2+self.Dp/2, self.step_y)
                 
-            self.PosiEng = np.append(-self.PosiEng, self.PosiEng)
-            self.PosiEng = np.sort(self.PosiEng)
+            self.yp = np.append(-self.yp, self.yp)
+
+            self.xp = np.full(self.N_eng, self.x_offset + (self.x_cg - self.lemac))
+            self.yp = np.sort(self.yp)
+            self.zp = np.full(self.N_eng, 0.075)  # 0.075 approximate vertical distance between engine and CG. Propellers is above. Computed with OpenVSP
             
         else:
             #default twin engine position
             self.step_y = 0.2
-            self.PosiEng = np.array([-self.step_y, self.step_y])
             self.Dp = 0.336  # 14" propeller
             self.Sp = self.Dp**2/4*math.pi
-            self.xp = self.Dp/2                                                                                         #This is distance from propeller to leading edge
+            self.x_offset = self.Dp/2       #This is distance from propeller to leading edge
+
+            self.xp = np.full(self.N_eng, self.x_offset + (self.x_cg - self.lemac))
+            self.yp = np.array([-self.step_y, self.step_y])
+            self.zp = np.full(self.N_eng, 0.075)  # 0.075 approximate vertical distance between engine and CG. Propellers is above. Computed with OpenVSP
             
         return
 
@@ -306,7 +313,7 @@ class data:
         self.Sv = Sv  # Vertical tail surface
         self.SvBase = Sv  # Vertical tail surface
         self.bv = bv  # Vertical tail wingspan
-        self.r = r    # Fuselage thickness at the section where the aerodynamic centre of vertical tail is
+        self.r = r    # Fuselage thickness (radius) at the section where the aerodynamic centre of vertical tail is
         self.Av = bv**2/Sv  # Vertical tail aspect ratio
         self.Sh = Sh  # Horizontal tail surface
         self.zw = zw  # wing position in fuselage. Height of wing root with respect to center of fuselage
@@ -515,7 +522,7 @@ class data:
         Compute torque based on default algo
         '''
         M_y = 0 # initialization
-        M_y = -np.dot(dx, self.PosiEng)
+        M_y = -np.dot(dx, self.yp)
         # for i in range(n_eng):
         #     M_y=M_y+x[start+i]*g.step_y*(n_eng-i)
         # for i in range(n_eng):
@@ -596,4 +603,4 @@ class data:
         
         Thr = self.ThrustSelig(dx, V)
         
-        return -np.dot(self.PosiEng, Thr)
+        return -np.dot(self.yp, Thr)

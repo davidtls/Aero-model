@@ -31,7 +31,7 @@ sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/Python')
 import PattersonAugmented as PA
 import control
 import pylab
-from StabilityMapUtils import ReadFileUtils
+import ReadFileUtils
 from StabilityMapUtils import equation as e
 from StabilityMapUtils import AeroForces
 import time
@@ -59,14 +59,12 @@ Complete Optimization/ Long_equilibrium
 Forces comparison deactivated
 g.hangar DEPoriginal (different thrust) or original (same thrust)
 flaps
+Velocity of flaps deployment
 """
 
 
 
-
-
-
-aircraft = {'model': 'ATR'}   #OPTIONS: ATR, DECOL
+aircraft = {'model': 'X-57'}   #OPTIONS: ATR, DECOL, X-57
 
 
 
@@ -128,10 +126,6 @@ if aircraft['model'] == 'DECOL':
 
 
 
-
-
-
-
 elif aircraft['model'] == 'ATR':
     from AircraftClass import ATRgeometry
 
@@ -158,7 +152,6 @@ elif aircraft['model'] == 'ATR':
     R = 000  # in meters the turn radius
     phimax = 5  # in degree the max bank angle authorized
     alphamax = 25  # in degree, stall bound for trimming
-    alphastall = 11.7  # that's for patterson
     deltaRmax = 30  # in degree
     ThrottleMax = 1  # max thrust level
     ThrottleMin = 1e-9  # min throttle, don't accept 0 thrust
@@ -180,11 +173,23 @@ elif aircraft['model'] == 'ATR':
 
     if g.IsPropWing:
         # ensures alpha fuselage as reference for stall
-        g.alpha_max = alphastall / 180 * np.pi + g.alpha_i - g.ip
-        g.alpha_max_fl = alphastall / 180 * np.pi + g.alpha_i - g.alpha_0
+        g.alpha_max = 11.7 / 180 * np.pi + g.alpha_i - g.alpha_0
+        g.alpha_max_fl = 11.7 / 180 * np.pi + g.alpha_i - g.alpha_0
+
+        #Explanation
+        """
+        The idea is that alpha_max =  (alpha-stall-airfoil) + (alpha_0_airfoil) + offset(wing-airfoil).
+        Effectively 11.7 + 4 = 15.7 is the angle of stall of the airfoil. We are also adding alpha_0 (alpha_0 is negative and we are
+        substracting, so adding something at the end)  as we are comparing alpha_max with  (aoa) + alpha_i + alpha_0
+        to see if there is stall or not. So at the end, all this is meaning that if the angle between the airspeed and the
+        fusselage is 11.7, the airfoil has an incidence of 15.7 and is in stall. 
+        """
+
+
+
     else:
-        g.alpha_max = alphastall / 180 * np.pi
-        g.alpha_max_fl = alphastall / 180 * np.pi
+        g.alpha_max = 11.7 / 180 * np.pi          # In Aeroforces the stall is not considered when there is no interaction
+        g.alpha_max_fl = 11.7 / 180 * np.pi       # so not really a lot of sense in this section
 
     # --- additional parameters (default edited during execution) ---
     g.set_nofin(False)  # =    True means : no rudder used    False:rudder used
@@ -198,7 +203,113 @@ elif aircraft['model'] == 'ATR':
     tolerance = 1e-5
     method = 'SLSQP'  # 'trust-interior' or 'SLSQP'
 
-    g.Pkeyword = 'DefaultPatterson'
+
+
+
+
+
+
+
+elif aircraft['model'] == 'X-57':
+    from AircraftClass import X57geometry
+    from StabilityMapUtils import LongitudinalX57
+
+    HLP = True
+    if HLP:
+        Neng = 12
+        FlapDefl = 30 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 10 and 30 degree
+        V_base = 35
+        H_base = 0  # in m the altitude : 2434 m (cruise) / 0 m take-off
+    else:
+        Neng = 2
+        FlapDefl = 0 * np.pi / 180
+        V_base = 77.1677         # 77.1677 (cruise)   or stall speed (Vsr=29.84)
+        H_base = 2434  # in m the altitude : 2434 m (cruise) / 0 m take-off
+
+    inop_eng = 0
+
+
+    g = X57geometry.data(1.0, Neng, inop_eng, FlapDefl, HLP)
+
+    # --- Test case and steady parameters
+    Vsr = 29.84  # m/s with 30° flaps and high lift propellers
+
+
+
+
+    beta_base = 0 / 180 * math.pi
+    gamma = 0                                                                                                           # previous condition  np.arctan(3 / 100)  # (3/100)/180*np.pi##math.atan(0/87.4)#/180*math.pi # 3% slope gradient # Best climb rate: 6.88m/s vertical @ 87.5m/s = 4.5°gamma, see http://www.atraircraft.com/products_app/media/pdf/Fiche_72-600_Juin-2014.pdf
+    R = 000  # in meters the turn radius
+    phimax = 5  # in degree the max bank angle authorized
+    alphamax = 25  # in degree, stall bound for trimming
+    deltaRmax = 30  # in degree
+    ThrottleMax = 1  # max thrust level
+    ThrottleMin = 1e-9  # min throttle, don't accept 0 thrust
+    ThrottleMinExt = 1e-9  # -0.34
+
+
+    # --- dictionnary for type of aircraft studied. aircraft: ATR72, version : 'original', 'DEPoriginal', 'DEPnofin'
+    g.hangar = {'aircraft': 'X-57', 'version': 'original'}
+
+    g.VelFlap = 0  # 0, we will set it.
+    g.CL0_fl = g.CL0_fl  # / 2   # for take off in no-interaction divide by two
+
+    if HLP:
+        g.IsPropWing = True
+        g.IsPropWingDrag = True
+
+        # ensures alpha fuselage as reference for stall. Stall angle from GNEW5BP93B airfoil documentation.
+        g.alpha_max = 18 / 180 * np.pi - g.alpha_0    # See explanation for ATR and keep in mind here alpha_i is 0 (no wing-fuselage offset)
+        g.alpha_max_fl = 18 / 180 * np.pi - g.alpha_0
+
+    else:
+        g.IsPropWing = False
+        g.IsPropWingDrag = False
+
+
+
+
+
+
+    # --- additional parameters (default edited during execution) ---
+    g.set_nofin(False)  # =    True means : no rudder used    False:rudder used
+
+
+
+
+
+    """ Algorithm set up """
+    # ---- Optim parameter ------
+    MaxIter = 100
+    tolerance = 1e-5
+    method = 'SLSQP'  # 'trust-interior' or 'SLSQP'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -221,8 +332,8 @@ mpl.rcParams["font.size"] = 16
 
 print("Engine position :")
 strout = ""
-for i in range(len(g.PosiEng)):
-    strout = strout+str(i+1)+" : "+"{:.3}".format(g.PosiEng[i])+"m, "
+for i in range(len(g.yp)):
+    strout = strout+str(i+1)+" : "+"{:.3}".format(g.yp[i])+"m, "
 print(strout)
 
 
@@ -284,20 +395,23 @@ CstA = True
 
 if aircraft['model'] == 'ATR':
 
-       Velocities = (70, 90, 110, 130, 150)                                          #Two first speeds for H = 0 m, last 3 for H=5000m
-       rho_vec = (1.225, 1.225, 0.736116,  0.736116,  0.736116)                      #rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
-       # a_sound = (340, 340, 320.529 ,320.529, 320.529)
-       Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                               # Mach= Vel/a
+     Velocities = (70, 90, 110, 130, 150)                                          #Two first speeds for H = 0 m, last 3 for H=5000m
+     rho_vec = (1.225, 1.225, 0.736116,  0.736116,  0.736116)                      #rho= 0.736116 kg/m^3     H=5000 m   a=320.529 m/s
+     # a_sound = (340, 340, 320.529 ,320.529, 320.529)
+     Mach = [0.2058, 0.2647, 0.3431, 0.4055, 0.4679]                               # Mach= Vel/a
 
 
+elif aircraft['model'] =='DECOL':
 
+     Velocities = (10, 15, 20, 25, 30, 35)
+     rho_vec = (1.225, 1.225, 1.225, 1.225, 1.225, 1.225)
+     Mach = np.ones((len(Velocities), 1))*0.0001
 
-elif aircraft['model']=='DECOL':
+elif aircraft['model'] =='X-57':
 
-      Velocities = (10, 15, 20, 25, 30, 35)
-      rho_vec = (1.225, 1.225, 1.225, 1.225, 1.225, 1.225)
-      Mach = np.ones((len(Velocities), 1))*0.0001
-
+     Velocities = (30, 35, 40, 75, 80)
+     rho_vec = (1.225, 1.225, 0.962870, 0.962870, 0.962870)
+     Mach = [0.0882, 0.1029, 0.1175, 0.2267, 0.2418]
 
 
 
@@ -314,7 +428,7 @@ elif aircraft['model']=='DECOL':
 #--- List all .stab file from vsp aero and read the coeff ---- 
 
 if g.hangar['aircraft'] == 'ATR72':
-    if g.hangar['version'] == 'original' or g.hangar['version']=='DEPoriginal':
+    if g.hangar['version'] == 'original' or g.hangar['version'] == 'DEPoriginal':
         if g.hangar['version'] == 'original' and g.nofin == True:
             print("WARNING : Using "+g.hangar['version']+" without rudder. Not recommended...")
         if g.hangar['version'] == 'DEPoriginal' and g.inop != 0 and g.nofin == True:
@@ -331,7 +445,7 @@ if g.hangar['aircraft'] == 'ATR72':
 elif g.hangar['aircraft'] == 'DECOL':
 
           # --- List all .stab file from vsp aero and read the coeff ----
-          path = 'DECOL_STAB/'  # 'home/e.nguyen-van/Documents/DECOLStability&Analysis/DECOLDATA/DECOLGeom_DegenGeom_6_3_18h14
+          path = 'DECOL_STAB/'
           filenameNoFin = [path + '_FinLess_Vinf10000.stab',
                            path + '_FinLess_Vinf15000.stab',
                            path + '_FinLess_Vinf20000.stab',
@@ -339,9 +453,23 @@ elif g.hangar['aircraft'] == 'DECOL':
                            path + '_FinLess_Vinf30000.stab',
                            path + '_FinLess_Vinf35000.stab']
           MatrixNoFin = ReadFileUtils.ReadStabCoef(filenameNoFin)
-
           # copy the matrix to avoid error and keep track
           Matrix = np.copy(MatrixNoFin)
+
+
+elif g.hangar['aircraft'] == 'X-57':
+
+    # --- List all .stab file from vsp aero and read the coeff ----
+    path = 'X-57_STAB/'
+    filenameNoFin = [path + 'Mach1.stab',
+                     path + 'Mach2.stab',
+                     path + 'Mach3.stab',
+                     path + 'Mach4.stab',
+                     path + 'Mach5.stab']
+    MatrixNoFin = ReadFileUtils.ReadStabCoef(filenameNoFin)
+    # copy the matrix to avoid error and keep track
+    Matrix = np.copy(MatrixNoFin)
+
 
 
 
@@ -362,17 +490,8 @@ M_base = V_base/a_sound
 
 
 
-
-
-
-
-if g.hangar['aircraft'] == 'ATR72':
-               Coef_base = AeroForces.CoefInterpol(M_base, CoefMatrix, Mach)
-               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Mach)
-
-elif g.hangar['aircraft'] == 'DECOL':
-               Coef_base = AeroForces.CoefInterpol(V_base, CoefMatrix, Velocities)
-               g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Velocities)
+Coef_base = AeroForces.CoefInterpol(M_base, CoefMatrix, Mach)
+g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Mach)
 
 
 
@@ -385,20 +504,14 @@ elif g.hangar['aircraft'] == 'DECOL':
 if aircraft['model'] =='ATR':
 
         PropPath = "./ATR72_SI_MTOW_Control_FinLess_FEM/"
-        PropFilenames = {'fem':[PropPath+"ATR72_FinLess_mach1",
-                                PropPath+"ATR72_FinLess_mach2",
-                                PropPath+"ATR72_FinLess_mach3",
-                                PropPath+"ATR72_FinLess_mach4",
-                                PropPath+"ATR72_FinLess_mach5"],
-                        'AirfoilPolar':PropPath+"naca3318Pol.txt",
-                        'FlapPolar':PropPath+"naca3318fl+10.txt",
-                        'AileronPolar':PropPath+"naca3318fl+10.txt"} # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
-        g.PolarAilDeflDeg = 10
-        g.PolarFlDeflDeg = 10
-        g.AilDiff = 0.5
-
-        if g.IsPropWing:
-                     g.Pkeyword = "DefaultPatterson"
+        PropFilenames = {'fem': [PropPath+"ATR72_FinLess_mach1",
+                                 PropPath+"ATR72_FinLess_mach2",
+                                 PropPath+"ATR72_FinLess_mach3",
+                                 PropPath+"ATR72_FinLess_mach4",
+                                 PropPath+"ATR72_FinLess_mach5"],
+                         'AirfoilPolar': PropPath+"naca3318Pol.txt",
+                         'FlapPolar': PropPath+"naca3318fl+10.txt",
+                         'AileronPolar': PropPath+"naca3318fl+10.txt"}  # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
         PW = PA.PropWing(g, PropFilenames)
         PW.DeltaCL_a_0 = 1
 
@@ -407,13 +520,11 @@ if aircraft['model'] =='ATR':
 
 elif aircraft['model']=='DECOL':
 
-            g.PolarFlDeflDeg = 5
-            g.PolarAilDeflDeg = 5
             PropPath = "DECOL_FEM/"
-            PropFilenames = {'fem':[PropPath+"_FinLess_Vinf10000.0"],
-                            'AirfoilPolar':PropPath+"S3010_XTr10_Re350.txt",
-                            'FlapPolar':PropPath+"S3010_XTr10_Re350_fl5.txt",
-                            'AileronPolar':PropPath+"S3010_XTr10_Re350_fl5.txt"} # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
+            PropFilenames = {'fem': [PropPath+"_FinLess_Vinf10000.0"],
+                             'AirfoilPolar': PropPath+"S3010_XTr10_Re350.txt",
+                             'FlapPolar': PropPath+"S3010_XTr10_Re350_fl5.txt",
+                             'AileronPolar': PropPath+"S3010_XTr10_Re350_fl5.txt"}  # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
             PW = PA.PropWing(g, PropFilenames)
             #PW.AoAZero[:,-1] = PW.AoAZero[:,-1] + 3.2/180*np.pi #correction for angle of incidence of wing
             PW.AoAZero[:, 0] = PW.AoAZero[:, 0]*10**(-3)
@@ -425,6 +536,26 @@ elif aircraft['model']=='DECOL':
             PW.DeltaCL_a_0 = 1  # CL_alpha correction factor
 
 
+if aircraft['model'] =='X-57':
+
+    PropPath = "./X-57_FEM/"
+    PropFilenames = {'fem': [PropPath+"Mach1",
+                             PropPath+"Mach2",
+                             PropPath+"Mach3",
+                             PropPath+"Mach4",
+                             PropPath+"Mach5"],
+                     'AirfoilPolar': PropPath+"Airfoil.txt",
+                     'FlapPolar': PropPath+"Airfoil-flap.txt",
+                     'AileronPolar': PropPath+"Airfoil-Aileron-10degree.txt"}
+    PW = PA.PropWing(g, PropFilenames)
+    PW.DeltaCL_a_0 = 1
+
+
+
+
+
+
+
 
 
 
@@ -432,6 +563,9 @@ elif aircraft['model']=='DECOL':
 #Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
 #Forces_comparison = Forces_test.Constraints_DEP_body(Coef_base, atmospher, g, PW)
 #Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
+
+
+
 
 
 
@@ -501,7 +635,7 @@ if g.Complete_Optimization == True:
 
 
 
-if g.Long_equilibrium:
+if g.Long_equilibrium and aircraft['model'] != 'X-57':
 
     """
      Function for longitudinal analysis.
@@ -529,14 +663,59 @@ if g.Long_equilibrium:
     #Long_variables;   (to define a combination of 2 or less)
     alpha_long = "TS"
     gamma_long = 0
-    V_long = 50
+    V_long = 'TS'
     de_long = "TS"
     dx_long = "TS"
     theta_long = "TS"
 
     vars = [alpha_long, gamma_long, V_long, de_long, dx_long, theta_long]
 
-    k, x, fixtest = Longitudinal.Long_Equilibrium(Coef_base, atmospher, g, PW, vars)
+    k, x, fixtest, diccons = Longitudinal.Long_Equilibrium(Coef_base, atmospher, g, PW, vars)
+
+
+
+
+if aircraft['model'] =='X-57':
+   if g.HLP:
+
+          """
+           Function for longitudinal analysis.
+           * 5 variables can be played with : alpha, gamma, V, de, theta
+           * There are a total of 4 equations, two for forces in axes x and z, one for moments, and one relating gamma,
+             alpha and theta.
+          
+            Function has two ways of working:
+           * If one variables are defined among these 6, then the function will give away the value of the other four.
+           * If zero variables are defined, then the function will give a set of 5 variables that optimize
+             a given function that must be defined.
+           * If more than one variable is defined problem may be over-constrained and no solution will be given.
+          
+          
+           For defining a variable just be careful to give it a value inside the possible limits.
+           For leaving a variable undefined just define it as a string.
+          
+          Examples:
+          * When defining no variable the function will find the minimum speed (stall speed) at the altitude given (while the
+            objective function is V_min) (OPTIMIZATION PERFORMED).
+          * By defining V the function will find the set of (alpha de gamma theta) to accomplish equilibrium.
+          """
+
+          #Long_variables;   (to define a combination of 2 or less)
+          alpha_long = "TS"
+          gamma_long = "TS"
+          V_long = "TS"
+          de_long = "TS"
+          theta_long = "TS"
+
+          vars = [alpha_long, gamma_long, V_long, de_long, theta_long]
+
+          k, x, fixtest, diccons = LongitudinalX57.Long_Equilibrium(Coef_base, atmospher, g, PW, vars)
+
+
+
+
+
+
 
 
 
@@ -559,17 +738,17 @@ def printx(x, fix, atmo, g, PW):
     print("\nState vector value:")
     print("V= {0:0.2f}m/s, alpha = {1:0.2f}\xb0, beta={2:0.2f}\xb0, phi={3:0.2f}\xb0, theta={4:0.2f}\xb0".format(V, alpha, beta, phi, theta))
     print("p={0:0.4f}\xb0/s q={1:0.4f}\xb0/s r={2:0.4f}\xb0/s".format(*pqr))
-    print("da={0:0.2f}\xb0, de= {1:0.2f}\xb0".format(da,de))
+    print("da={0:0.2f}\xb0, de= {1:0.2f}\xb0".format(da, de))
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[3] * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * fix[1] + g.wingsweep) - x[3] * g.yp
 
     if g.IsPropWing:
         if V <= g.VelFlap or g.FlapDefl != 0:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, fix[1], x[1], V, x[3])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect, atmo)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, fix[1], x[1], V, x[3])
         else:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, fix[1], x[1], V, x[3])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect, atmo)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, fix[1], x[1], V, x[3])
 
-    if g.nofin==False:
+    if g.nofin == False:
         print("dr = {0:0.2f}\xb0".format(x[8]/math.pi*180))
 
 

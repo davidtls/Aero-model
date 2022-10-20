@@ -103,8 +103,8 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
         sub_vect = np.append(sub_vect, [aileron, elevator])  # no fin allowed, default case
 
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
-    Fx_vec = g.Thrust(x[-g.N_eng:],V_vect)
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
+    Fx_vec = g.Thrust(x[-g.N_eng:],V_vect, atmo)
     Fx = np.sum(Fx_vec)
 
 
@@ -113,7 +113,7 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i + g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i + g.alpha_0+g.ip)]
+    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
 
 
 
@@ -125,8 +125,8 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     # Moment of thrust is obtained in body reference
     Moment = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
-        a = np.array([g.x_cg - (g.lemac - g.xp), g.PosiEng[i], g.z_m])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)])
+        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
         Moment[i, :] = np.cross(a, b)
     Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
@@ -309,10 +309,10 @@ def Constraints_DEP_body(CoefMatrix, atmo, g, PropWing):
 
     #Thrust forces and moments
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
 
 
-    Fx_vec = g.Thrust(x[-g.N_eng:], V_vect)
+    Fx_vec = g.Thrust(x[-g.N_eng:], V_vect, atmo)
     Fx = np.sum(Fx_vec)
 
 
@@ -331,15 +331,15 @@ def Constraints_DEP_body(CoefMatrix, atmo, g, PropWing):
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i + g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i + g.alpha_0+g.ip)]
+    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
 
 
 
     # Moment of thrust is obtained in body reference
     Moment = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
-        a = np.array([g.x_cg - (g.lemac - g.xp), g.PosiEng[i], g.z_m])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)])
+        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
         Moment[i, :] = np.cross(a, b)
     Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
@@ -499,11 +499,11 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
 
     #Thrust forces and moments
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
 
 
 
-    Fx_vec = g.Thrust(np.full(g.N_eng, dx), V_vect)
+    Fx_vec = g.Thrust(np.full(g.N_eng, dx), V_vect, atmo)
     Fx = np.sum(Fx_vec)
 
 
@@ -512,7 +512,7 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i + g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i + g.alpha_0+g.ip)]
+    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
 
 
 
@@ -524,8 +524,8 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     # Moment of thrust is obtained in body reference
     Moment = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
-        a = np.array([g.x_cg - (g.lemac - g.xp), g.PosiEng[i], g.z_m])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i + g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i + g.alpha_0+g.ip)])
+        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
         Moment[i, :] = np.cross(a, b)
     Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
@@ -610,7 +610,7 @@ def printx(x, fix, atmo, g, PW):
     print("p={0:0.4f}\xb0/s q={1:0.4f}\xb0/s r={2:0.4f}\xb0/s".format(*pqr))
     print("da={0:0.2f}\xb0, de= {1:0.2f}\xb0".format(da,de))
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * fix[1] + g.wingsweep) - x[3] * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * fix[1] + g.wingsweep) - x[3] * g.yp
 
     if g.IsPropWing:
         if V <= g.VelFlap or g.FlapDefl != 0:

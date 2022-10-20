@@ -94,7 +94,7 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
         deltaRmax = 30  # in degree
         ThrottleMax = 1  # max thrust level
         ThrottleMin = 0.0001  # min throttle, don't accept 0 thrust
-        V=fix[0]
+        V = fix[0]
 
        #               alfa                            p             q            r                   phi                                     theta                        delta_a                                delta_e                                delta_r
        #bnds=( (-5*math.pi/180,alphamax*math.pi/180), (-0.2,0.2), (-0.2,0.2), (-0.2,0.2), (-phimax/180*math.pi,phimax/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-30/180*math.pi,30/180*math.pi), (-20/180*math.pi,20/180*math.pi), (-deltaRmax/180*math.pi,deltaRmax/180*math.pi))
@@ -283,7 +283,7 @@ def Sample_generation(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
 
-                                Coefs2[:,i*variations2**5+j*variations2**4+k*variations2**3+p*variations2**2+q*variations2+r]=Constraints_DEP(testvector2[:,i*variations2**5+j*variations2**4+k*variations2**3+p*variations2**2+q*variations2+r], CoefMatrix, atmo, g, PropWing,V)
+                                Coefs2[:,i*variations2**5+j*variations2**4+k*variations2**3+p*variations2**2+q*variations2+r]=Constraints_DEP(testvector2[:,i*variations2**5+j*variations2**4+k*variations2**3+p*variations2**2+q*variations2+r], CoefMatrix, atmo, g, PropWing, V)
 
 
 
@@ -577,8 +577,8 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing,Vfix):
         sub_vect = np.append(sub_vect, [x[6], x[7]])  # no fin allowed, default case
 
 
-     V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
-     Fx_vec = g.Thrust(x[-(g.N_eng+4):-4], V_vect)
+     V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
+     Fx_vec = g.Thrust(x[-(g.N_eng+4):-4], V_vect, atmo)
      Tc = Fx_vec / (2 * rho * g.Sp * V_vect ** 2)
 
      F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
@@ -588,14 +588,14 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing,Vfix):
      Coefs=np.zeros(len(F))
 
      for i in range(len(F)):
-        if i==0 or i==1 or i==2:
+        if i == 0 or i == 1 or i == 2:
             Coefs[i] = F[i] / (0.5 * rho * V**2 * g.S)
 
-        elif i==4:
+        elif i == 4:
             Coefs[i] = F[i] / (0.5 * rho * V**2 * g.S * g.c)
 
         else:
-            Coefs[i] = F[i] / (0.5 * rho * V ** 2 * g.S *  g.b)
+            Coefs[i] = F[i] / (0.5 * rho * V ** 2 * g.S * g.b)
 
 
      return Coefs

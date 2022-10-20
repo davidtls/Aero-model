@@ -160,7 +160,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     F[2] = np.dot(CoefMatrix[2], xsym)                       # ( CL_ALFA*ALFA + CL_BETA*|BETA| + CL_P*P^ +  CL_Q*Q^ + CL_R*R^ + CL_DA*|DA| +  CL_DE*DE + CD_DR*|DR|)  !calculated again later if interaction
     M = np.dot(CoefMatrix[3:6, :], x)
 
-    DragQuad = F[0] + g.Cda*x[0]**2 + g.Cdb * x[0] + g.Cdc + (g.CD0T - g.Cdc_fl_0)    #  Last term for moving above the polar Cd0
+    DragQuad = F[0] + g.Cda*x[0]**2 + g.Cdb * x[0] + g.Cdc + (g.CD0T - g.Cdc_fl_0)    #  Last term for moving above the polar Cd0. (CD0T more accurate than Cdc_fl_0)
 
     Cm, CL_tail = Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing)       #  For the pitching moment calculus with Delft paper
 
@@ -301,24 +301,33 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     # Epsilon without inflow effects
 
-    eps = g.eps0 + (g.deps_dalpha / CL_alpha_no_int) * CL_alpha_interaction * alpha
+    eps_noinflow = g.eps0 + (g.deps_dalpha / CL_alpha_no_int) * CL_alpha_interaction * alpha
 
 
     # H calculus :   Vertical Distance of Slipstream Center Line to Horizontal Tail
 
-    h = g.z_h_w - g.lh*np.sin(alpha) - (g.xp + 0.25 * g.c)*np.sin(alpha) + g.lh2*np.sin(g.K_e * eps) + g.FlChord * g.c * np.sin(g.FlapDefl) + 0.25 * (g.xp + 0.25 * g.c) * np.sin(PropWing.alpha0_fl * g.FlapDefl)
+    h = g.z_h_w - g.lh*np.sin(alpha) - (g.x_offset + 0.25 * g.c)*np.sin(alpha) + g.lh2*np.sin(g.K_e * eps_noinflow) + g.FlChord * g.c * np.sin(g.FlapDefl) + 0.25 * (g.x_offset + 0.25 * g.c) * np.sin(PropWing.alpha0_fl * g.FlapDefl)
 
     # PropWing.alpha0_fl has to be the change in airfoil section zero-lift angle-of-attack due to flap deflection (obtained using AVL)
     # PropWing.alpha0_fl is the change in alpha_0 for every radian deflection of flap. It is necessary to multiply by flaps deflection, in radians.
     # g.FlapDefl is in radians
 
 
-
     # Epsilon with inflow effects
 
-    if h < 1.25 * D_s:
-        extra_eps = (g.var_eps * VarVtoV) * np.pi / 180
+    eps = g.eps0 + (g.deps_dalpha / CL_alpha_no_int) * CL_alpha_interaction * alpha
+
+    if h < 1.25 * D_s and h > -0.5 * D_s:
+        var_eps = -0.2263 * (h/(0.5*D_s)) ** 6 + 1.0584 * (h/(0.5*D_s)) ** 5 - 0.2971 * (h/(0.5*D_s)) ** 4 - 3.56 * (h/(0.5*D_s)) ** 3 + 0.7938 * (h/(0.5*D_s)) ** 2 + 5.6374 * (h/(0.5*D_s)) + 0.0246  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+        extra_eps = (var_eps * VarVtoV) * np.pi / 180
         eps = eps + extra_eps
+    elif h > 1.25 * D_s:
+        var_eps = 0
+    else:
+        var_eps = -3
+        extra_eps = (var_eps * VarVtoV) * np.pi / 180
+        eps = eps + extra_eps
+
 
 
 
@@ -328,14 +337,19 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     if (1 - (2*h / D_s)**2) > 0:
         bs = D_s * (1 - (2*h / D_s)**2) ** 0.5
-        Sh_s = 2 * bs * g.c_ht
+
+        if g.hangar['aircraft'] == 'X-57':
+            Sh_s = 2 * 2 * bs * g.c_ht   # Four engines within the tail wingspan
+        else:
+            Sh_s = 2 * bs * g.c_ht
 
         dpratio = ((Sh_s / g.Sh) * (1 + VarVtoV)**2 + (1-Sh_s/g.Sh))
-    else:
-        dpratio = (1+VarVtoV)**2
 
-    #BASICAMENTE PARECE QUE LA PARTE MOJADA DE LA COLA HORIZONTAL POR EL TUBO DE SLISPTREAM ES 0. ELLO IMPLICARIA QUE LA PRESION DINAMICA NO CAMBIA ?
-    #MIRAR EN EL PAPER; VAYA MIERDA; EL SLIPSTREAM TAMPOCO CAMBIA O QUE...? EN DECOL SI AFECTARA QUAND MEME
+    else:
+        dpratio = 1
+
+    # Essentially the tail area inside the slipstream is the one affected by the dynamic pressure increase
+
 
 
 
@@ -374,6 +388,8 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
     Cm_tail_off = Cm_s_0 + Cm_s_df + Cm_s_alpha + Cm_0 - (CL_alpha_interaction * alpha + g.CL0_fl + (CL0_int-g.CL0))*(g.lemac + 0.25*g.c - g.x_cg)
+
+
 
 
 

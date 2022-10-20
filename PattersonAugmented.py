@@ -88,7 +88,7 @@ class PropWing:
         -alphaVSP : finite wing alpha_0 from VLM computation
         
     Error or differences : 
-        -Small ofset in lift slope between VLM and patter even at CT=0. Should come from vsp aero
+        -Small offset in lift slope between VLM and patter even at CT=0. Should come from vsp aero
         -The formulation of Patterson introduces a divergence of the lift multiplier at L=0. A new formulation should be used
         -When adding 0.5*Cdip the drag still appears to have a better evolution/fitting mostly at high CL. Bad at lower than 0.75CL for T=1000N/m^2
             Could be some unconcidered effects (swirl recovery?) or just Patterson divergence.
@@ -119,103 +119,103 @@ class PropWing:
     C4 = np.array([-0.127645, 0.135543, -0.028919, -0.026546, 0.010470, 0.012221])
     
     #functions
-    def __init__(self,plane,Files):
+    def __init__(self, plane, Files):
         # Will check the necessary data are given in aircraft
-        print("PropWing interaction will use for friction drag, Cd0 laminaire : {0}, CD0 turbulent : {1}".format(plane.Cd0_laminar,plane.Cd0_turbulent));
+        print("PropWing interaction will use for friction drag, Cd0 laminaire : {0}, CD0 turbulent : {1}".format(plane.Cd0_laminar, plane.Cd0_turbulent));
         print("PropWing interaction will use zero lift angle : {0}".format(plane.alphaVSP))
         print("PropWing interaction will use propeller ip : {0}".format(plane.ip))
         
         #import the local lift distribution
         #if many files are given, assume a variation in Mach
         self.NumFiles = 1
-        if len(Files['fem'])>1:
+        if len(Files['fem']) > 1:
             print('Reading multiple files')
             self.NumFiles = len(Files['fem'])
             
             #Read first to have the format
             CLslope, AoAZero, Mach = Read.ReadSectionCLslope(Files['fem'][0])
             
-            self.CLslope = np.zeros( (len(CLslope),len(CLslope[1,:]),self.NumFiles) )
-            self.AoAZero = np.zeros( (len(CLslope),len(CLslope[1,:]),self.NumFiles) )
+            self.CLslope = np.zeros((len(CLslope), len(CLslope[1, :]), self.NumFiles))
+            self.AoAZero = np.zeros((len(CLslope), len(CLslope[1, :]), self.NumFiles))
             self.M_vec = np.zeros((self.NumFiles))
-            self.CLslope[:,:,0] = np.copy(CLslope)
-            self.AoAZero[:,:,0] = np.copy(AoAZero)
+            self.CLslope[:, :, 0] = np.copy(CLslope)
+            self.AoAZero[:, :, 0] = np.copy(AoAZero)
             self.M_vec[0] = Mach
-            for i in range(1,self.NumFiles):
-                self.CLslope[:,:,i], self.AoAZero[:,:,i], self.M_vec[i]= Read.ReadSectionCLslope(Files['fem'][i])
+            for i in range(1, self.NumFiles):
+                self.CLslope[:, :, i], self.AoAZero[:, :, i], self.M_vec[i] = Read.ReadSectionCLslope(Files['fem'][i])
             
-            #Correction for any wing incidence angle in VSP
-            self.AoAZero[:,-1,:]=self.AoAZero[:,-1,:] + plane.alpha_i
+            # Correction for any wing incidence angle in VSP
+            self.AoAZero[:, -1, :] = self.AoAZero[:, -1, :] + plane.alpha_i
             
         else:
-            self.CLslope, self.AoAZero, self.M_vec= Read.ReadSectionCLslope(Files['fem'][0])
-            #Correction for any wing incidence angle in VSP
-            self.AoAZero[:,-1]=self.AoAZero[:,-1] + plane.alpha_i
+            self.CLslope, self.AoAZero, self.M_vec = Read.ReadSectionCLslope(Files['fem'][0])
+            # Correction for any wing incidence angle in VSP
+            self.AoAZero[:, -1] = self.AoAZero[:, -1] + plane.alpha_i
             
-        #That's to manage airfoil drag after stall
+        # That's to manage airfoil drag after stall
         alphaDrag, self.StallDrag = Read.ReadAirfoilDrag(Files['AirfoilPolar'])
         self.alphaDrag = alphaDrag/180*np.pi
-        self.StallDrag = interp1d(self.alphaDrag,self.StallDrag)
+        self.StallDrag = interp1d(self.alphaDrag, self.StallDrag)
         
         # Read flap and aileron polars if any
         if plane.isflap == True:
-            #assume no change for ailerons efficiency with respect to Mach number
-            self.alpha0_fl = ((Read.ReadAlpha0(Files['FlapPolar']) - Read.ReadAlpha0(Files['AirfoilPolar']))/plane.PolarFlDeflDeg)
+            # assume no change for ailerons efficiency with respect to Mach number
+            self.alpha0_fl = ((Read.ReadAlpha0_Improved(Files['FlapPolar']) - Read.ReadAlpha0_Improved(Files['AirfoilPolar']))/plane.PolarFlDeflDeg)
         
         if plane.isail == True:
-            self.alpha0_ail = (Read.ReadAlpha0(Files['AileronPolar']) - Read.ReadAlpha0(Files['AirfoilPolar']))/plane.PolarAilDeflDeg
+            self.alpha0_ail = (Read.ReadAlpha0_Improved(Files['AileronPolar']) - Read.ReadAlpha0_Improved(Files['AirfoilPolar']))/plane.PolarAilDeflDeg
             
       
             
     def Interpol(self,Input,M):
         
         if self.NumFiles<2:
-            #No data for interpolation
+            # No data for interpolation
             return np.copy(Input)
         
-        BaseInput = np.copy(Input[:,:,0])
+        BaseInput = np.copy(Input[:, :, 0])
         MachInput = np.copy(Input)
         
-        if M<=self.M_vec[0] :
+        if M <= self.M_vec[0]:
             # use first coeff file
             return BaseInput
     
-        elif M>=self.M_vec[-1]:
-            #Use last coeff file
-            BaseInput = np.copy(MachInput[:,:,-1])
+        elif M >= self.M_vec[-1]:
+            # Use last coeff file
+            BaseInput = np.copy(MachInput[:, :, -1])
             return BaseInput
         
         else:
             exitcondition=1
-            length_v=len(self.M_vec)-1
-            i=0
-            while exitcondition :
+            length_v = len(self.M_vec)-1
+            i = 0
+            while exitcondition:
                
-                if M==self.M_vec[i]:
-                    #if it's exactly on one file
+                if M == self.M_vec[i]:
+                    # if it's exactly on one file
                     BaseInput = np.copy(MachInput[:,:,i])
                     exitcondition=0
 #                    print("Exactly equal")
 #                    print(self.M_vec[i])
                 
                 elif M>self.M_vec[i] and M<self.M_vec[i+1]:
-                    #linear interpolation
-                    a=(MachInput[:,-1,i+1]-MachInput[:,-1,i])/(self.M_vec[i+1]-self.M_vec[i])
-                    b=MachInput[:,-1,i]-a*self.M_vec[i]
-                    Areturn=a*M+b
-                    BaseInput[:,-1]=Areturn
-                    exitcondition=0 #exit
+                    # linear interpolation
+                    a = (MachInput[:, -1, i+1]-MachInput[:, -1, i])/(self.M_vec[i+1]-self.M_vec[i])
+                    b = MachInput[:, -1, i]-a*self.M_vec[i]
+                    Areturn = a*M+b
+                    BaseInput[:, -1] = Areturn
+                    exitcondition = 0  #exit
                 
                 else:
-                    i=i+1
+                    i = i+1
                     
-                if i==length_v: #security to exit the while
+                if i == length_v:  # security to exit the while
                     print("AeroForces : Error in interpolating dist Cl, returning dist at M=0")
-                    exitcondition=0
+                    exitcondition = 0
         
         return BaseInput
 
-    def BetaSurro(self,a, Mu, rho, SectMu):
+    def BetaSurro(self, a, Mu, rho, SectMu):
         """
         This function computes the beta, corrective term of Patterson propeller
         lift model.
@@ -237,26 +237,26 @@ class PropWing:
 #        C3 = np.array([0.997936, -0.916118, 0.199829, 0.157810, -0.143368, -0.057385])
 #        C4 = np.array([-0.127645, 0.135543, -0.028919, -0.026546, 0.010470, 0.012221])
         
-        #Definition of surrogate vector
+        # Definition of surrogate vector
         Lratio = 0
         Rratio = 0
         
-        #Retrieve the local chord:
+        # Retrieve the local chord:
         if self.NumFiles>1:
-            LocalChord = self.CLslope[:,2,0]
+            LocalChord = self.CLslope[: ,2, 0]
         else:
-            LocalChord = self.CLslope[:,2]
+            LocalChord = self.CLslope[:, 2]
         
         beta=np.zeros(len(LocalChord))
         for i in range(len(beta)):
-            Lratio = a.xp/LocalChord[i]                                                                                 #xp is distance between propeller and leading edge
-            Rratio = a.Dp/(2*LocalChord[i])                                                                             #Dp is the radio of the propeller
+            Lratio = a.x_offset/LocalChord[i]                                                                           #x_offset is distance between propeller and leading edge
+            Rratio = a.Dp/(2*LocalChord[i])                                                                             #Dp is the diameter of the propeller
             if SectMu[i] != 0:
                 X = np.array([1, Lratio, Lratio**2, Lratio*Mu[int(SectMu[i])-1], Mu[int(SectMu[i])-1], Mu[int(SectMu[i])-1]**2])
             else:
                 X = np.array([1, Lratio, Lratio**2, Lratio*1, 1, 1**2])
             # Compute the whole thing
-            beta[i] = np.dot(self.C0,X) + np.dot(self.C1,X)*Rratio + np.dot(self.C2,X)*Rratio**2 + np.dot(self.C3,X)*Rratio**3 + np.dot(self.C4,X)*Rratio**4
+            beta[i] = np.dot(self.C0, X) + np.dot(self.C1, X)*Rratio + np.dot(self.C2, X)*Rratio**2 + np.dot(self.C3, X)*Rratio**3 + np.dot(self.C4, X)*Rratio**4
         
         return beta
 
@@ -264,8 +264,8 @@ class PropWing:
 
     def ReOrganiseLift(self, lift):
         # reorganise lift distribution for plotting or other uses
-        dtype=[('Yposi', np.float), ('Area', np.float), ('LocalChord', np.float), ('Cl', np.float), ('Cdw', np.float), ('Cd0', np.float), ('Vep_total', np.float), ('V_r_effects', np.float) ]
-        structArray = np.zeros((len(lift[:,1]),),dtype=dtype)
+        dtype=[('Yposi', np.float), ('Area', np.float), ('LocalChord', np.float), ('Cl', np.float), ('Cdw', np.float), ('Cd0', np.float), ('Vep_total', np.float), ('V_r_effects', np.float)]
+        structArray = np.zeros((len(lift[:, 1]),), dtype=dtype)
         structArray['Yposi'] = lift[:, 0]
         structArray['Area'] = lift[:, 1]
         structArray['LocalChord'] = lift[:, 2]
@@ -273,7 +273,7 @@ class PropWing:
         structArray['Cdw'] = lift[:, 4]
         structArray['Cd0'] = lift[:, 5]
         structArray['Vep_total'] = lift[:, 6]
-        structArray['V_r_effects'] = lift[:,7]
+        structArray['V_r_effects'] = lift[:, 7]
 
         return np.sort(structArray, order='Yposi')
     
@@ -462,7 +462,7 @@ class PropWing:
 
         fig2 = plt.figure()
         ax2 = fig2.gca()
-        plt.plot(Dist['Yposi'], self.Cdi_vec  , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        plt.plot(Dist['Yposi'], self.Cdi_vec, linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
         ax2.set_xlabel('Y (m)')
         ax2.set_ylabel('Cd induced')
         ax2.legend()
@@ -472,7 +472,7 @@ class PropWing:
 
         fig3 = plt.figure()
         ax3 = fig3.gca()
-        plt.plot(Dist['Yposi'], Dist['Cdw'] , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        plt.plot(Dist['Yposi'], Dist['Cdw'], linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
         ax3.set_xlabel('Y (m)')
         ax3.set_ylabel('Cd wash')
         ax3.legend()
@@ -482,7 +482,7 @@ class PropWing:
 
         fig4 = plt.figure()
         ax4 = fig4.gca()
-        plt.plot(Dist['Yposi'],  Dist['Cd0'] , linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
+        plt.plot(Dist['Yposi'],  Dist['Cd0'], linestyle='--', color='0.25', label='$T_c$ = {0:0.3f}'.format(Tc[0]))
         ax4.set_xlabel('Y (m)')
         ax4.set_ylabel('Cd0_extra ')
         ax4.legend()
@@ -540,7 +540,7 @@ class PropWing:
 
         #get wing alpha0
         alpha0w = self.Interpol(self.AoAZero, Mach) # test with section zero lift angle
-        alpha0w=alpha0w[:,-1] # keep only alpha0
+        alpha0w = alpha0w[:, -1]  # keep only alpha0
 
         #Get the local slope
         NormCl = self.Interpol(self.CLslope, Mach)
@@ -562,7 +562,7 @@ class PropWing:
 
         av_alpha_0 = np.mean(alpha0w)
 
-        V_vect = V * (np.cos((-np.sign(plane.PosiEng)) * beta + plane.wingsweep)) - r * plane.PosiEng
+        V_vect = V * (np.cos((-np.sign(plane.yp)) * beta + plane.wingsweep)) - r * plane.yp
         Velocity = V * (np.cos((-np.sign(NormCl[:, 0])) * beta + plane.wingsweep)) - r * NormCl[:, 0]
         T = Tc * (2 * rho * V ** 2 * plane.Sp)
 
@@ -682,7 +682,7 @@ class PropWing:
         for i in range(len(SectInProp)):
             # Check is sect has prop, flap, ailerons left or right
             for a in range(len(Tc)):
-                if NormCl[i,0] <= plane.PosiEng[a]+plane.Dp/2 and NormCl[i,0] >= plane.PosiEng[a]-plane.Dp/2:
+                if NormCl[i,0] <= plane.yp[a]+plane.Dp/2 and NormCl[i,0] >= plane.yp[a]-plane.Dp/2:
                     SectInProp[i] = int(a+1) # label engines from 1 to N_eng
             
             #Flap 1 negative y
@@ -928,7 +928,7 @@ class PropWing:
         rho = atmospher[1]
 
 
-        V_vect = V * (np.cos((-np.sign(plane.PosiEng)) * beta + plane.wingsweep)) - r * plane.PosiEng
+        V_vect = V * (np.cos((-np.sign(plane.yp)) * beta + plane.wingsweep)) - r * plane.yp
         T = Tc * (2 * rho * V ** 2 * plane.Sp)
 
         myw = np.zeros(len(Tc))

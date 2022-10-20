@@ -260,8 +260,8 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing):
         sub_vect = np.append(sub_vect, [x[6], x[7]])  # no fin allowed, default case
 
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
-    Fx_vec = g.Thrust(x[-(g.N_eng+4):-4], V_vect)
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
+    Fx_vec = g.Thrust(x[-(g.N_eng+4):-4], V_vect, atmo)
     Tc = Fx_vec / (2 * rho * g.Sp * V_vect ** 2)
 
     F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
@@ -278,7 +278,7 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing):
             Coefs[i] = F[i] / (0.5 * rho * V**2 * g.S * g.c)
 
         else:
-            Coefs[i] = F[i] / (0.5 * rho * V ** 2 * g.S *  g.b)
+            Coefs[i] = F[i] / (0.5 * rho * V ** 2 * g.S * g.b)
 
 
     return Coefs

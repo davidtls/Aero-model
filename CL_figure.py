@@ -230,7 +230,7 @@ def Constraints_DEP(x, CoefMatrix, atmo, g, PropWing,Vfix):
         sub_vect = np.append(sub_vect, [x[6], x[7]])  # no fin allowed, default case
 
 
-    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
+    V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
     Fx_vec = g.Thrust(x[-(g.N_eng+4):-4], V_vect)
     Tc = Fx_vec / (2 * rho * g.Sp * V_vect ** 2)
 

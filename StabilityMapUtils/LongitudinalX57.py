@@ -17,14 +17,14 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
          * 6 variables can be played with : alpha, gamma, V, de, dx, theta
          * There are a total of 4 equations, two for forces in axes x and z, one for moments, and one relating gamma,
            alpha and theta.
-    
+
     Function has two ways of working:
          * If two variables are defined among these 6, then the function will give away the value of the other four.
          * If zero, or one variable are defined, then the function will give a set of 6 variables that optimize
            a given function that must be defined.
          * If more than two variables are defined problem may be over-constrained and no solution will be given.
 
-    
+
     For defining a variable just be careful to give it a value inside the possible limits.
     For leaving a variable undefined just define it as a string.
 
@@ -42,15 +42,14 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
     gamma = vars[1]
     V = vars[2]
     de = vars[3]
-    dx = vars[4]
-    theta = vars[5]
+    theta = vars[4]
 
 
 
 
-    Variables = {'alpha': alpha, 'theta': theta, 'de': de, 'dx': dx , 'V': V, 'gamma': gamma }
-    Bounds = {'alpha': (-5*math.pi/180, 20*math.pi/180), 'theta': (-30/180*math.pi, 30/180*math.pi), 'de': (-23/180*math.pi, 13/180*math.pi), 'dx': (1e-9, 1), 'V': (0, 150), 'gamma': (-30/180*math.pi, 30/180*math.pi)}
-    Initial_guess = {'alpha': 0, 'theta': 0, 'de': 0, 'dx': 0.4, 'V': 40, 'gamma': 0}
+    Variables = {'alpha': alpha, 'theta': theta, 'de': de, 'V': V, 'gamma': gamma }
+    Bounds = {'alpha': (-5*math.pi/180, 25*math.pi/180), 'theta': (-30/180*math.pi, 30/180*math.pi), 'de': (-50/180*math.pi, 30/180*math.pi), 'V': (0, 150), 'gamma': (-30/180*math.pi, 30/180*math.pi)}
+    Initial_guess = {'alpha': 0, 'theta': 0, 'de': 0, 'V': 40, 'gamma': 0}
 
     x0 = []
     fixtest = []
@@ -63,14 +62,14 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
     for key, value in Variables.items():
 
         if type(value) != str:
-               fixtest.append(value)
-               fixtestorder.append(key)
+            fixtest.append(value)
+            fixtestorder.append(key)
 
         else:
-                x0.append(Initial_guess[key])
-                xorder.append(key)
-                bnds1.append(Bounds[key][0])
-                bnds2.append(Bounds[key][1])
+            x0.append(Initial_guess[key])
+            xorder.append(key)
+            bnds1.append(Bounds[key][0])
+            bnds2.append(Bounds[key][1])
 
 
 
@@ -123,12 +122,10 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
             alpha = k.x[i]
         elif key == 'de':
             de = k.x[i]
-        elif key == 'dx':
-            dx = k.x[i]
         elif key == 'theta':
             theta = k.x[i]
         elif key == 'gamma':
-             gamma = k.x[i]
+            gamma = k.x[i]
     i = -1
     for key in fixtestorder:
         i = i+1
@@ -138,14 +135,12 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
             alpha = fixtest[i]
         elif key == 'de':
             de = fixtest[i]
-        elif key == 'dx':
-            dx = fixtest[i]
         elif key == 'theta':
             theta = fixtest[i]
         elif key == 'gamma':
-             gamma = fixtest[i]
+            gamma = fixtest[i]
 
-    x = np.concatenate((np.array([alpha, 0, 0, 0, 0, theta, 0, de, 0]), np.full(g.N_eng, dx)))
+    x = np.concatenate((np.array([alpha, 0, 0, 0, 0, theta, 0, de, 0]), np.full(g.N_eng, 1)))
     fixtest = np.array([V, 0, gamma, 0])
 
     # for coherance shall be
@@ -163,12 +158,12 @@ def Order(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
 
     """
     You need at the end a vector like this
-    -x =[V, alpha, theta, de, dx, gamma]
+    -x =[V, alpha, theta, de, gamma]
 
 
     """
 
-    x = np.zeros(6)
+    x = np.zeros(5)
     i = -1
 
     for key in xorder:
@@ -186,11 +181,8 @@ def Order(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
         elif key == 'de':
             x[3] = a[i]
 
-        elif key == 'dx':
-            x[4] = a[i]
-
         elif key == 'gamma':
-            x[5] = a[i]
+            x[4] = a[i]
 
 
     i = -1
@@ -209,11 +201,8 @@ def Order(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
         elif key == 'de':
             x[3] = b[i]
 
-        elif key == 'dx':
-            x[4] = b[i]
-
         elif key == 'gamma':
-            x[5] = b[i]
+            x[4] = b[i]
 
 
     A = Long_equations(x, CoefMatrix, atmo, g, PropWing)
@@ -246,8 +235,7 @@ def V_min(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
             alpha = a[i]
         elif key == 'de':
             de = a[i]
-        elif key == 'dx':
-            dx = a[i]
+
     i = -1
     for key in fixtestorder:
         i = i+1
@@ -257,8 +245,7 @@ def V_min(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
             alpha = b[i]
         elif key == 'de':
             de = b[i]
-        elif key == 'dx':
-            dx = b[i]
+
 
     p = 0
     q = 0
@@ -266,6 +253,8 @@ def V_min(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
     beta = 0
     da = 0
     dr = 0
+
+    dx = 1
 
 
     # --- Compute aerodynamic forces ---
@@ -312,8 +301,9 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
     alpha = x[1]
     theta = x[2]
     de = x[3]
-    dx = x[4]
-    gamma = x[5]
+    gamma = x[4]
+
+    dx = 1
 
 
     p = 0

@@ -1,28 +1,23 @@
-
 """
-Created on Wed Nov 22 18:11:08 2017
+Created on Tuesday, October 20 2022
 
-Geometry class for the ATR72
+Geometry class for the A320
 
-A few constants are defined here:
-    N_eng
-    inop_eng
-    Vertical Tail correction terms
+First a general A320 will be defined in here and an scalation term
+will be used to adpat it to D08 maquet.
 
-The rest are terms relative to ATR geometry mass etc...
 
-@author: e.nguyen-van
+@author: david.planas
 """
 import math
 import sys
 import numpy as np
-import copy
-from scipy.special import erf
+
 
 
 
 class data:
-    # all data from ATR72 go here.
+    # all data from A320 go here.
     hangar = {}
     # shared data between class go here:
 
@@ -32,76 +27,77 @@ class data:
     m = 21500  # Kg (base 21.5T, MTOW : 23T, MLW : 22.35T    MZFW : 21T   MFL : 5T  MPL : 7.5T)
 
 
-    # --- Geometry --- 
-    S = 61.0  # m^2
-    b = 27.05  # m
-    c = 2.324481  # m Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
-    lv = 25.84 - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
-    zf = 2  # z position of the MAC of the fin, in reality a suitable height
-    lemac = 11.24  # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
-    fswept = 35/180*math.pi  # sweep angle of VT
-    ftaper = 0.55  # taper ratio of VT
-    fAR = 1.57  # aspect ratio of VT
-    FusWidth = 2.82
-    bh = 7.21  # in m the HT wingspan
-    Sh = 11.13  # Horizontal tail surface
+    # --- Geometry ---
+    S = 122.6  # m^2
+    b = 34.10  # m
+    c = 3.5953  # m Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
+    lv =  - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
+    zf = 2 # z position of the MAC of the fin, in reality a suitable height
+    lemac =   # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
+    fswept = /180*math.pi  # sweep angle of VT
+    ftaper =   # taper ratio of VT
+    fAR =  # aspect ratio of VT
+    FusWidth =
+    bh = 12.45  # in m the HT wingspan
+    Sh =   # Horizontal tail surface
     Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 1.02     Volume coefficient of Horizontal tail
-    it = -0.5 * np.pi/180                  # Horizontal tail tilt angle
-    taudr = 0.30  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
-    Var_xac_fus = -0.69    # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
+    it =  * np.pi/180                  # Horizontal tail tilt angle
+    taudr =   # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
+    Var_xac_fus =     # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
 
-    wingsweep = 0  # radians, in ATR there is not sweep
-    dihedral = 0
+    wingsweep = 25*np.pi/180  # radians
+    dihedral = 10.5*np.pi/180 #radians
 
 
     # flap and aileron definition
     isflap = True
-    FlPosi = 0.05  # with respect to wingspan, the start position of flap [0,0.5]
-    FlRatio = 0.75-FlPosi*2  # the total flap length to wingspan ratio
-    FlChord = 0.3  # with respect to local chord, flap chord
+    FlPosi =   # with respect to wingspan, the start position of flap [0,0.5]
+    FlRatio = -FlPosi*2  # the total flap length to wingspan ratio
+    FlChord =   # with respect to local chord, flap chord
     isail = True
-    AilDiff = 0.5
-    AilPosi = 0.375  # [0,0.5]
-    AilRatio = 0.125  # One aileron.
-    AilChord = 0.3
+    AilDiff =
+    AilPosi =   # [0,0.5]
+    AilRatio =   # One aileron.
+    AilChord =
 
 
 
 
     # Inertia terms are obtained from VSPaero for an homogeneous weight distribution
-    Ix = 289873  # Kg/m^2
-    Iy = 298442  # Kg/m^2
-    Iz = 573579  # Kg/m^2
-    Ixz = 0      # Kg/m^2
+    Ix =   # Kg/m^2
+    Iy =   # Kg/m^2
+    Iz =   # Kg/m^2
+    Ixz =      # Kg/m^2
 
 
     # --- Power ---
-    P_a = 2.051*10**6  # power consumed by one engine in the original ATR 72 bi-engine
-    P_var = P_a        # power consumed by one engine in the original ATR 72 bi-engine
-    hp = 0  # rotor term
-    prop_eff = 0.8
-    ip = -1.6/180*np.pi  # propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line
+    P_a =   # per engine
+    P_var = P_a
+    hp =   # rotor term
+    prop_eff =
+    ip = -3/180*np.pi  # propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line
     Pkeyword = 'Default'  # designate the propulsion model used to compute thrust
 
 
     # --- Propeller-Wing activation ---
-    IsPropWing = True
-    IsPropWingDrag = True
+    IsPropWing = False
+    IsPropWingDrag = False
 
 
     # --- Distances ---
-    z_h_w = 3.371  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. positive if tail is over.
-    lh = 14.2183   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
-    lh2 = 12.09    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
-    K_e = 1.35     # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
-    c_ht = 1.54    # Average chord of the horizontal tail
-
-    cm_0_s = -0.0494 # +  (0.2941)*Var_xac_fus/c  #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
+    z_m =    # vertical distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
+    z_h_w =   # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP
+    lh =    # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
+    lh2 =     # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
+    K_e =      # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    c_ht =     # Average chord of the horizontal tail
+    var_eps =   # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    cm_0_s =  # +  (0.2941)*Var_xac_fus/c  #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
     # ---Unique coeff ---
-    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
-    aht2 = 0.78082       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
-    Cm_alpha_wb = 1.173310  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
+    aht =         # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
+    aht2 =        # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
+    Cm_alpha_wb =  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
     # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
     # Cm_alpha_fus =
 
@@ -112,51 +108,51 @@ class data:
     # alpha=0 coeff
 
     # without flaps
-    CD0T = 0.03383  # from OpenVSP, parasitic zero lift drag      THESIS HAMBURG 0.027403
-    CD0T_wo_VT = 0.03112
-    CL0 = 0.516688      # Total CL0 including horizontal tail
-    CL0_HT = -0.0284    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
-    Cm0 = 0.035015
-    Cm0_wo_HT = -0.129536    # Cm0 of aircraft less horizontal tail
+    CD0T =   # from OpenVSP, parasitic zero lift drag      THESIS HAMBURG 0.027403
+    CD0T_wo_VT =
+    CL0 =       # Total CL0 including horizontal tail
+    CL0_HT =    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
+    Cm0 =
+    Cm0_wo_HT =     # Cm0 of aircraft less horizontal tail
 
 
     # Drag polar without patterson. Interpolated from VSP v26, updated VSPAERO
-    Cda_fl_0 = 1.1458     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 0 °
-    Cdb_fl_0 = 0.1891     # alpha in radians!!
-    Cdc_fl_0 = 0.026
+    Cda_fl_0 =
+    Cdb_fl_0 =
+    Cdc_fl_0 =
 
     # with flaps down 15°, coefficients and drag polar
-    Cd0_fl_15 = 0.030989      # extra drag
-    CL0_fl_15 = 0.500229      # extra lift
-    Cm0_fl_15 = -0.027008     # extra moment
+    Cd0_fl_15 =       # extra drag
+    CL0_fl_15 =       # extra lift
+    Cm0_fl_15 =      # extra moment
 
-    Cda_fl_15 = 1.034     # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
-    Cdb_fl_15 = 0.3506    # alpha in radians!!
-    Cdc_fl_15 = 0.057
+    Cda_fl_15 =      # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
+    Cdb_fl_15 =
+    Cdc_fl_15 =
 
     # with flaps down 30°
-    Cd0_fl_30 = 0.069758     # extra lift
-    CL0_fl_30 = 0.862223     # extra drag
-    Cm0_fl_30 = -0.046686    # extra moment
+    Cd0_fl_30 =     # extra lift
+    CL0_fl_30 =     # extra drag
+    Cm0_fl_30 =    # extra moment
 
-    Cda_fl_30 = 0.9197       # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
-    Cdb_fl_30 = 0.4424
-    Cdc_fl_30 = 0.0957
+    Cda_fl_30 =       # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
+    Cdb_fl_30 =
+    Cdc_fl_30 =
 
 
     # Down-Wash parameters
 
     # No flaps
-    eps0_flaps0 = 1.5 * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
-    deps_dalpha_flaps0 = 0.247      # Derivative of downwash with respect to alpha, no flaps conf
+    eps0_flaps0 =  * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
+    deps_dalpha_flaps0 =       # Derivative of downwash with respect to alpha, no flaps conf
 
     # 15° flaps
-    eps0_flaps15 = 2.411
-    deps_dalpha_flaps15 = 0.2387
+    eps0_flaps15 =
+    deps_dalpha_flaps15 =
 
     # 30° flaps
-    eps0_flaps30 = 3.05 * np.pi/180
-    deps_dalpha_flaps30 = 0.262
+    eps0_flaps30 = * np.pi/180
+    deps_dalpha_flaps30 =
 
 
     # Airfoil characteristics
@@ -165,7 +161,7 @@ class data:
 
 
     # wing tilt angle, angle between reference line of fuselage and reference line of profile
-    alpha_i = 4 / 180 * np.pi
+    alpha_i =  / 180 * np.pi
 
 
     # airfoil zero lift angle: from zero lift line to reference line. Negative means that airfoil lifts with 0 local angle of attack measured to reference line
@@ -180,47 +176,6 @@ class data:
     PolarAilDeflDeg = 10  # Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
     alpha_max = 15/180*np.pi
     alpha_max_fl = 10/180*np.pi
-
-
-
-
-
-
-
-
-
-    
-    def __init__(self, VTsize, N_eng, inop_eng, FlapDefl, bv=4.42, r=0.6, zw=1.8, rf=1.3, zh=3.71, bvl=5.91, Sh=11.13, Sv=12.5, TipClearance=True , dfus=0, dprop=0.1):
-        self.VTsize = VTsize
-
-        self.SetEngineNumber(N_eng, inop_eng, TipClearance, dfus, dprop)
-
-        # See Nicolosi 2017, Ciliberti 2017, and Ciliberti thesis 2012 for more info
-        self.Sv = Sv  # Vertical tail surface
-        self.SvBase = Sv  # Vertical tail surface
-        self.bv = bv  # Vertical tail wingspan
-        self.r = r    # Fuselage thickness at the section where the aerodynamic centre of vertical tail is
-        self.Av = bv**2/Sv  # Vertical tail aspect ratio
-        self.Sh = Sh  # Horizontal tail surface
-        self.zw = zw  # wing position in fuselage. Height of wing root with respect to center of fuselage
-        self.rf = rf  # Fuselage max radius
-        self.zh = zh  # Position of the horizontal tail on the vertical tail to the fuselage centre line
-        self.bvl = bv+r  # Vertical tailplane span extended to the fuselage center line
-        
-        #Nicolosi csts
-        self.Kf = self.CalcKf(bv, r)
-        self.Kw = self.CalcKw(zw, rf)
-        self.Kh = self.CalcKh(zh, bvl, Sh, Sv)
-        self.Kdr = self.CalcKdr(self.Kf, self.Av)
-        self.taudr = 0.30
-        #Atmosphere
-        self.AtmoDic = self.loadAtmo()
-
-        #Aero coefficients for DragQuad
-        self.FlapDefl = FlapDefl
-        self.Cdo_fl, self.CL0_fl, self.Cm0_fl, self.Cda, self.Cdb, self.Cdc = self.AeroCoefs(FlapDefl)
-
-
 
 
 
@@ -327,44 +282,57 @@ class data:
                 self.Dp = (self.b/2-self.FusWidth/2)/(N_eng/2+dfus-0.5+(N_eng/2-1)*dprop)                               #Bigger Dp than in previous case.
 
             self.Sp = self.Dp**2/4*math.pi                                                                              #frontal surface propeller = pi*radio^2
-            self.x_offset = self.Dp/2             #Is the distance between propeller and leading edge
-            self.step_y = self.Dp+dprop*self.Dp
-
+            self.xp = self.Dp/2                                                                                         #Is the distance between propeller and leading edge
+            self.step_y=self.Dp+dprop*self.Dp
 
             if TipClearance == True:
-                self.yp = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2, self.step_y)                       #creates vector
+                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5),self.b/2,self.step_y)                       #creates vector
             else:                                                                                                       #np.arange([start, ]stop, [step, ])
-                self.yp = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2+self.Dp/2, self.step_y)
+                self.PosiEng = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5),self.b/2+self.Dp/2,self.step_y)
 
-            self.yp = np.append(-self.yp, self.yp)
-
-            self.yp = np.sort(self.yp)                                                                        #sort sorts an array (put in order)
-            self.xp = np.full(self.N_eng, self.x_offset + (self.x_cg - self.lemac))
-            self.zp = np.full(self.N_eng, -0.443)   # vertical distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
+            self.PosiEng = np.append(-self.PosiEng,self.PosiEng)
+            self.PosiEng = np.sort(self.PosiEng)                                                                        #sort sorts an array (put in order)
 
         else:                                                                                                           #Option if N_eng is another random thing
             #default ATR engine position
             self.step_y = 8.1/2.0
-
+            self.PosiEng = np.array([-self.step_y, self.step_y])
             self.Dp = 3.96  # original ATR72 prop diameter
             self.Sp = self.Dp**2/4*math.pi
-            self.x_offset = self.Dp/2
-
-            self.xp = np.full(self.N_eng, self.x_offset + (self.x_cg - self.lemac))
-            self.yp = np.array([-self.step_y, self.step_y])
-            self.zp = np.full(self.N_eng, -0.443)   # vertical distance from center of gravity to propellers. Propellers are over Computed with OpenVSP
+            self.xp = self.Dp/2
 
         return
 
 
+    def __init__(self, VTsize, N_eng, inop_eng, FlapDefl, bv=4.42, r=0.6, zw=1.8, rf=1.3, zh=3.71, bvl=5.91, Sh=11.13, Sv=12.5, TipClearance=True , dfus=0, dprop=0.1):
+        self.VTsize = VTsize
 
+        self.SetEngineNumber(N_eng, inop_eng, TipClearance, dfus, dprop)
 
+        # See Nicolosi 2017, Ciliberti 2017, and Ciliberti thesis 2012 for more info
+        self.Sv = Sv  # Vertical tail surface
+        self.SvBase = Sv  # Vertical tail surface
+        self.bv = bv  # Vertical tail wingspan
+        self.r = r    # Fuselage thickness at the section where the aerodynamic centre of vertical tail is
+        self.Av = bv**2/Sv  # Vertical tail aspect ratio
+        self.Sh = Sh  # Horizontal tail surface
+        self.zw = zw  # wing position in fuselage. Height of wing root with respect to center of fuselage
+        self.rf = rf  # Fuselage max radius
+        self.zh = zh  # Position of the horizontal tail on the vertical tail to the fuselage centre line
+        self.bvl = bv+r  # Vertical tailplane span extended to the fuselage center line
 
+        #Nicolosi csts
+        self.Kf = self.CalcKf(bv, r)
+        self.Kw = self.CalcKw(zw, rf)
+        self.Kh = self.CalcKh(zh, bvl, Sh, Sv)
+        self.Kdr = self.CalcKdr(self.Kf, self.Av)
+        self.taudr = 0.30
+        #Atmosphere
+        self.AtmoDic = self.loadAtmo()
 
-
-
-
-
+        #Aero coefficients for DragQuad
+        self.FlapDefl = FlapDefl
+        self.Cdo_fl, self.CL0_fl, self.Cm0_fl, self.Cda, self.Cdb, self.Cdc = self.AeroCoefs(FlapDefl)
 
 
 
@@ -409,28 +377,28 @@ class data:
     def printVTsize(self):
         print('Asked vertical tail size of current class:')
         print(self.VTsize)
-    
+
     def NicolosiCoef(self, MCoef, Mach):
         # function to compute Cy, Cl and Cn derivatives using VeDSC methods
         # replaces the coefficients in the matrix Mcoef by those computed by VeDSC
         # to call only once, it computes for every velocities/Mach number. Then linear interpol
         # Cy_beta, Cy_p = 0, Cy_r = 0, Cl_beta = 0, Cl_r = 0, Cn_beta= 0, Cn_p = 0, Cn_n = 0
-        
+
         MVeDSC=np.copy(MCoef) # create a copy of the coefficients matrix
         if self.nofin == False:
             # add a column to account for rudder
             dimZero = len(MVeDSC[:, 0])
             MVeDSC = np.hstack((MVeDSC, np.zeros((dimZero, 1))))
-            
+
         K = self.Kf*self.Kh*self.Kw
-#        print('New VT efficiency = {0:0.4f}'.format(K))
+        #        print('New VT efficiency = {0:0.4f}'.format(K))
         for i in range(len(Mach)):
             Av = self.bv**2/self.Sv
-#            print(Av)
+            #            print(Av)
             cla = 2*math.pi # local lift curve slope coefficient of fin (perpendicular to leading edge) per rad
             eta = cla/(2*math.pi)
             av = -(Av * cla * math.cos(self.fswept) * 1/math.sqrt(1-Mach[i]**2*(math.cos(self.fswept))**2))/(Av*math.sqrt(1+4*eta**2/(Av/math.cos(self.fswept))**2)+2*eta*math.cos(self.fswept))# mach number formula
-#            print(av)
+            #            print(av)
             VeDSC_Coef = np.array([[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],[0.0, 0.0, 0.0, 0.0]])
             VeDSC_Coef[0, 0] = K*av*self.Sv/self.S
             VeDSC_Coef[0, 1] = K*av*self.Sv/self.S*self.zf/self.b*2
@@ -463,70 +431,59 @@ class data:
                     if VeDSC_Coef[kk, jj] != 0:
                         MVeDSC[EffPosi[kk]+i*NumEff, VarPosi[jj]] = MVeDSC[EffPosi[kk]+i*NumEff, VarPosi[jj]]+VeDSC_Coef[kk, jj]      #adds a term to CY_beta  CY_p CY_r
                         # Cl_beta  Cl_p  Cl_r   Cn_beta  Cn_p  Cn_r
-#            print(VeDSC_Coef)
+        #            print(VeDSC_Coef)
 
         return MVeDSC
-        
-
-
 
 
     def AdjustVT(self, VTNewSize=1):
         # Adjust VT geometry parameters based on VTsize
         # Change only Kf, Kw and Kh, does not modify internal goem param
-        
+
         # local variables
         Sv = self.SvBase
         bv = self.bv
         r = self.r
         Av = self.Av
-        
+
         if VTNewSize != 1:
             Sv = Sv*VTNewSize
         else:
             Sv = Sv*self.VTsize
-        
+
         self.bv = (Av*Sv)**0.5
         self.zh = r+0.77*bv
         self.bvl = bv+r
-        
+
         # Compute new coef if necessary
         self.Sv = Sv
         self.Kf = self.CalcKf(self.bv, r)
         self.Kh = self.CalcKh(self.zh, self.bvl, self.Sh, Sv)
-        
+
         return np.array([self.Kf, self.Kh])
-
-
-
 
     def AdjustVTcstSpan(self, VTNewSize=1):
         # Adjust VT geometry parameters based on VTsize
         # Based on Sv and cste span (increase Av)
         # Change only Kf, Kw and Kh
-        
+
         # local variables
         Sv = self.SvBase
         bv = self.bv
-        
+
         if VTNewSize != 1:
             Sv = Sv*VTNewSize
         else:
             Sv = Sv*self.VTsize
-        
+
         self.Av = bv**2/Sv
-        
+
         # Compute new coef if necessary
         self.Sv = Sv
         self.Kh = self.CalcKh(self.zh, self.bvl, self.Sh, Sv)
         print('New VT aspect ratio Av={0:0.3f}'.format(self.Av))
-        
+
         return np.array([self.Kh])
-
-
-
-
-
 
     def GetAtmo(self, h=0):
         """
@@ -536,58 +493,82 @@ class data:
         Condition = h/500 is int
         if Condition:
             Indice = h//500+1
-            
+
         else:
             if (h/500) < (h//500+500/2):
                 Indice = int(h//500+1)
             else:
                 Indice = int(h//500+2)
-        
+
         results = np.array([self.AtmoDic['a'][Indice], self.AtmoDic['dens'][Indice]])
         return results
 
-
-
-
-
-
-
-    
     def DefaultProp(self, dx, V):
-        # returns a vector
-        Thr = dx*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff   #The 2 is because in original version P_var = is the power of one engine
-                                                                    # and the original version has two
+        '''
+        Compute thrust based on throttle levels dx
+        Uses original model
+        '''
+        Thr = np.sum(dx)*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
+
         return Thr
-    
 
-    
+    def DefaultPropPatterson(self, dx, V):
+        #Same as defaultprop but returns a vector instead
+        Thr = dx*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
 
-        
+        return Thr
+
+    def DefaultTorque(self, dx, V):
+        '''
+        Compute torque based on default algo
+        '''
+        M_y = 0  # initialization
+        M_y = -np.dot(dx,self.PosiEng)
+        # for i in range(n_eng):
+        #     M_y=M_y+x[start+i]*g.step_y*(n_eng-i)
+        # for i in range(n_eng):
+        #     M_y=M_y-x[-i-1]*g.step_y*(n_eng-i)
+
+        M_y = M_y*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
+
+        return M_y
 
 
-    
+
+
+
+
     def Thrust(self, dx, V, theta_i=np.array([None])):
-
         if self.Pkeyword == 'Default':
             return self.DefaultProp(dx, V)
-        
+
+        if self.Pkeyword == 'DefaultPatterson':
+            return self.DefaultPropPatterson(dx, V)
+
         if self.Pkeyword == 'BaseFunction':
             if theta_i.any() is None:
                 return self.BasisFunThrust(self.Theta_i, dx, V)
             else:
                 return self.BasisFunThrust(theta_i, dx, V)
-        
+
         else:
             print('WARNING, Pkeyword undefined in func "Thrust"')
             return None
-    
 
+    def Torque(self, dx, V, theta_i=np.array([None])):
+        if self.Pkeyword == 'Default' or self.Pkeyword == 'DefaultPatterson':
+            return self.DefaultTorque(dx,V)
+        if self.Pkeyword == 'BaseFunction':
+            if theta_i.any() is None:
+                return self.BasisFunTorque(self.Theta_i,dx, V)
+            else:
+                return self.BasisFunTorque(theta_i, dx, V)
+        else:
+            print('WARNING, Pkeyword undefined in func "Torque"')
+            return None
 
-
-
-        
     def DragModel(self, alpha, alpha_patter):
         # Added drag to account for induced drag due to flap deflection
         self.Cd_fl = (alpha_patter-alpha)*self.Cdalpha * self.FlRatio
-        
+
         return None

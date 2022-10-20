@@ -98,7 +98,7 @@ def Eigenvalues(Aero_Derivatives_adim,x,fixtest,atmo,g,PW,CoefMatrix):
           I = np.array([[g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz]])
 
           #for CLs and CDs calculus
-          V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.PosiEng)) * beta + g.wingsweep) - r * g.PosiEng
+          V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
           sub_vect = np.array([alpha, beta, p, q, r])
           if g.nofin == False:
               sub_vect = np.append(sub_vect, [x[6], x[7], x[8]])
