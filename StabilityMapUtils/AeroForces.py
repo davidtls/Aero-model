@@ -142,18 +142,16 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     else:
         dail = 0
 
-    #    F=np.dot(CoefMatrix,x[0:7]) # commented form, modification to account for symmetric drag increase of side slip
+
     F = np.zeros(3)
     M = np.zeros(3)
+
     xsym = np.copy(x)
-
-
     xsym[1] = abs(xsym[1])  # make beta always positive since derivatives have already correct sign for drag and lift only
     xsym[5] = abs(xsym[5])  # make ailerons deflection always positive for drag increase and lift decrease
 
     if g.nofin == False:
               xsym[-1] = abs(xsym[-1])  # make rudder deflection always positive for drag increase and lift decrease
-
 
     F[0] = np.dot(CoefMatrix[0, 1:], xsym[1:])               # (                CD_BETA*|BETA| + CD_P*P^ +  CD_Q*Q^ + CD_R*R^ + CD_DA*|DA| +  CD_DE*DE   + CD_DR*|DR|)  !not alpha
     F[1] = np.dot(CoefMatrix[1], x)                          # ( CY_ALFA*ALFA + CY_BETA* BETA  + CY_P*P^ +  CY_Q*Q^ + CY_R*R^ + CY_DA*DA   +  CY_DE*DE   + CY_DR*DR)
@@ -162,7 +160,7 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     DragQuad = F[0] + g.Cda*x[0]**2 + g.Cdb * x[0] + g.Cdc + (g.CD0T - g.Cdc_fl_0)    #  Last term for moving above the polar Cd0. (CD0T more accurate than Cdc_fl_0)
 
-    Cm, CL_tail = Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing)       #  For the pitching moment calculus with Delft paper
+
 
     if g.IsPropWing:
 
@@ -170,8 +168,9 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
         CoefMatrix[3, 4] = CoefMatrix[3, 4] - g.Matrix_no_tail_terms[3, 4]
         M = np.dot(CoefMatrix[3:6, :], x)
 
+        Cm, CL_tail = Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing)       #  For the pitching moment calculus with Delft paper
         F[2] = np.dot(CoefMatrix[2][1:], xsym[1:]) + CL_tail                                                #F[2] Calculated without alpha: CL_BETA*BETA + CL_P*P + CL_Q*Q + CL_R*R + CL_DA*|DA| + CL_DE*DE + CL_DR*|DR|   )
-                                                                                                                        #Terms for horizontal tail added (alpha, and 0-alpha term) to modify x[0] and g.CL0_HT to take into account slisptream
+                                                                                                            #Terms for horizontal tail added (alpha, and 0-alpha term) to modify x[0] and g.CL0_HT to take into account slisptream
         if V <= g.VelFlap or g.FlapDefl != 0:
 
             CLCl = PropWing.CalcCoef(Tc, V/a_sound, atmo, x[0], dail, g.FlapDefl, g, beta, p, V, r)
@@ -181,7 +180,6 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
                 # Drag is computed by patterson, add contribution of other variables (than alpha and dx)
                 Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]]) # add alpha=0 coefficients
                 Moment = M+np.array([CLCl[1], g.Cm0 + g.Cm0_fl, CLCl[4]])
-
 
             else:
                 Fbody = np.array([-DragQuad, F[1], -F[2]-CLCl[0]])  # add alpha=0 coefficients

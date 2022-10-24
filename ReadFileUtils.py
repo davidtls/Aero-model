@@ -30,7 +30,7 @@ def ReadAlpha0(file):
                 startInterpol = True
                 continue
             
-            if startInterpol == True:
+            if startInterpol:
                 if float(words[1]) > 0:
                     # need to interpolated
                     a = (float(words[1])-CLTemp)/(float(words[0])-alphaTemp)
@@ -40,7 +40,7 @@ def ReadAlpha0(file):
                 else:
                     CLTemp = float(words[1])
                     alphaTemp = float(words[0])
-    if InterpolCompleted == True:
+    if InterpolCompleted:
         return Alpha0
     else:
         sys.exit('Could not interpole alpha0 in polar file : ' + file)
@@ -65,16 +65,13 @@ def ReadAlpha0_Improved(file):
                 startLog = True
                 continue
 
-            if startLog == True:
+            if startLog:
                 alphaTemp = np.append(alphaTemp, float(words[0]))
                 CLTemp = np.append(CLTemp, float(words[1]))
 
     interpolation = interp1d(alphaTemp, CLTemp)
 
     Alpha0 = - interpolation(0)/( (interpolation(4) - interpolation(-5))/ (4 - -5))
-
-
-
 
     return Alpha0
 
@@ -100,7 +97,7 @@ def ReadAirfoilDrag(file):
                 startLog = True
                 continue
             
-            if startLog == True:
+            if startLog:
                 alphaTemp = np.append(alphaTemp, float(words[0]))
                 CDTemp = np.append(CDTemp, float(words[2]))
                 
@@ -132,7 +129,7 @@ def ReadSectionCl(filename, OutputAoa=False):
                 aoa = float(words[1])/180*np.pi  # angle of attack analysed
             if words[0] == Keywords[0]:
                 if words[1] == Keywords[1]:
-                    #Wing section detected update wing counter
+                    # Wing section detected update wing counter
                     WingNumber = WingNumber+1
             if words[0] == Keywords[2]:
                 NSection = int(words[1])  # Get the SpanStation
@@ -141,7 +138,7 @@ def ReadSectionCl(filename, OutputAoa=False):
                 # call the readcoef function and stack the data in MySec
                 MySec = np.vstack([MySec, ReadCoef(NSection, CurrentLine, filename+extension)])
         
-        #Update line counter
+        # Update line counter
         CurrentLine = CurrentLine+1
             
     f.close()

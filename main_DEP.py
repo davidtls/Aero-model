@@ -13,7 +13,7 @@ Main file for stability mapping
 import numpy as np
 import math
 import scipy.linalg
-import scipy.io #input/output with matlab
+import scipy.io  # input/output with matlab
 import matplotlib as mpl
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
@@ -21,11 +21,6 @@ from scipy.optimize import minimize
 from scipy.optimize import fsolve
 from scipy.optimize import least_squares
 import sys
-sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/Python/PattersonAugmented')
-sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/PythonStabilityMapUtils')
-sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/Python/AircraftClass')
-sys.path.insert(0, '/home/e.nguyen-van/Documents/codesign-small-tail/Python')
-
 
 
 import PattersonAugmented as PA
@@ -50,21 +45,22 @@ from StabilityMapUtils import Longitudinal
 
 """
 Things to check:
-aircraft model
-Propeller Wing Interaction
-inop engines
-Speed
-Altitude
-Complete Optimization/ Long_equilibrium
-Forces comparison deactivated
-g.hangar DEPoriginal (different thrust) or original (same thrust)
-flaps
-Velocity of flaps deployment
+         Aircraft model
+         Propeller Wing Interaction
+         inop engines
+         Speed
+         Altitude
+         Complete Optimization/ Long_equilibrium
+         Forces comparison deactivated
+         g.hangar DEPoriginal (different thrust) or original (same thrust)
+         flaps
+         Velocity of flaps deployment
 """
 
 
 
 aircraft = {'model': 'X-57'}   #OPTIONS: ATR, DECOL, X-57
+
 
 
 
@@ -161,7 +157,7 @@ elif aircraft['model'] == 'ATR':
     # --- dictionnary for type of aircraft studied. aircraft: ATR72, version : 'original', 'DEPoriginal', 'DEPnofin'
     g.hangar = {'aircraft': 'ATR72', 'version': 'original'}
 
-    g.VelFlap = 0 # modificada para que no salte   71  # in m/s the maximum velocity at which flap are deployed
+    g.VelFlap = 0  # modificada para que no salte   71  # in m/s the maximum velocity at which flap are deployed
     g.CL0_fl = g.CL0_fl  # / 2   # for take off in no-interaction divide by two
 
 
@@ -214,7 +210,7 @@ elif aircraft['model'] == 'X-57':
     from AircraftClass import X57geometry
     from StabilityMapUtils import LongitudinalX57
 
-    HLP = True
+    HLP = False
     if HLP:
         Neng = 12
         FlapDefl = 30 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 10 and 30 degree
@@ -265,6 +261,9 @@ elif aircraft['model'] == 'X-57':
     else:
         g.IsPropWing = False
         g.IsPropWingDrag = False
+
+        g.alpha_max = 18 / 180 * np.pi - g.alpha_0    # See explanation for ATR and keep in mind here alpha_i is 0 (no wing-fuselage offset)
+        g.alpha_max_fl = 18 / 180 * np.pi - g.alpha_0
 
 
 

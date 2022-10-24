@@ -8,9 +8,9 @@ The following variables are varied for longitudinal and lateral cases
    x + fix = [alpha, p, q, r, phi, theta, delta_a, delta_e, delta_r, delta_xi(hay 12), V , beta , gamma, omega]
 
 
- Given example. For a function y=f(x1,x2,x3) . In order to get a systematic sample working in apricott a 3 points
- sample is taken (0,1,2) for the three variables, so number of points = variations^variables = (3^3=27)
- Apricott requires the order of the sample to be as following (systematic)
+ EXAMPLE. For a function y=f(x1,x2,x3) . A 3 points  sample is taken (0,1,2) for the three variables,
+ so number of points = variations^variables = (3^3=27)
+ APRICOT requires the order of the sample to be as following (systematic)
 
 
 
@@ -18,9 +18,9 @@ The following variables are varied for longitudinal and lateral cases
      # x2: 0   0   0       1   1   1       2   2   2       0   0   0       1   1   1       2   2   2       0   0   0       1   1   1       2   2   2
      # x3: 0   1   2       0   1   2       0   1   2       0   1   2       0   1   2       0   1   2       0   1   2       0   1   2       0   1   2
 
-     #It is required to build a matrix of:
-     # rows: 3 (number of variables)
-     # colons: 27 (variations^variables, 3^3)
+     It is required to build a matrix of:
+           rows: 3 (number of variables)
+           colons: 27 (variations^variables, 3^3)
 
      #VARIABLE 1: suffers a variation each  number of variations^2
      #VARIABLE 2: suffers a variation each  number of variations^1

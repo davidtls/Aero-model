@@ -31,13 +31,13 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
 
     # --- Now prepare variables for equations ---
-    V = 54.197554409534234
-    beta = 0
+    V = 77.1677
+    beta = 20*np.pi/180
     gamma = 0
     omega = 0
 
 
-    alpha = 0.2561481435699163        #0.09727079748668332
+    alpha = 2*np.pi/180        #0.09727079748668332
     p = 0  # 0.25 max
     q = 0
     r = 0  # 0.1 max
@@ -45,9 +45,9 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     phi = 0
     theta = alpha
     aileron = 0
-    elevator = -0.2092793295829573
+    elevator = 0
     rudder = 0
-    delta_x = 0.28356126397103343
+    delta_x = 1
 
     g.FlapDefl = 0*np.pi/180  # 15*np.pi/180 , 30*np.pi/180
 
@@ -113,7 +113,7 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
+    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
 
 
 
@@ -126,7 +126,7 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     Moment = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
         a = np.array([g.xp[i], g.yp[i], g.zp[i]])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
         Moment[i, :] = np.cross(a, b)
     Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
@@ -142,26 +142,30 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
     fixtest = np.array([V, beta, gamma, omega])
 
-    sinbank=np.sin(theta)*np.cos(alpha)*np.sin(beta) + np.cos(beta)*np.cos(theta)*np.sin(phi)-np.sin(alpha)*np.sin(beta)*np.cos(theta)*np.cos(phi)
-    cosbank=np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi)
+    sinbank = np.sin(theta)*np.cos(alpha)*np.sin(beta) + np.cos(beta)*np.cos(theta)*np.sin(phi)-np.sin(alpha)*np.sin(beta)*np.cos(theta)*np.cos(phi)
+    cosbank = np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi)
 
 
     if g.IsPropWing:
-         h=1
+         h = 1
 
 
-    g.IsPropWing = True
-    g.IsPropWingDrag = True
+    g.IsPropWing = False
+    g.IsPropWingDrag = False
 
 
     F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
-    # F contiene solo las fuerzas y momentos aerodinámicos en ejes viento.
+    # F contiene solo las fuerzas en ejes viento y momentos aerodinámicos en ejes cuerpo.
 
     printx(x, fixtest, atmo, g, PropWing)
 
 
     CL = -F[2]/(0.5*rho*V**2 * g.S)
     CD = -F[0]/(0.5*rho*V**2 * g.S)
+    CY = -F[1]/(0.5*rho*V**2 * g.S)
+    Clroll = -F[3]/(0.5*rho*V**2 * g.S * g.b)
+    Cm = -F[4]/(0.5*rho*V**2 * g.S * g.c)
+    Cn = -F[5]/(0.5*rho*V**2 * g.S * g.b)
 
 
     A=np.zeros(10)
