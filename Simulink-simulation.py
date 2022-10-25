@@ -116,7 +116,7 @@ ThrottleMax = 1  # max thrust level
 ThrottleMin = 1e-9  # min throttle, don't accept 0 thrust
 g.VelFlap = 0  # modificada para que no salte   71  # in m/s the maximum velocity at which flap are deployed
 
-
+g.nofin = False
 
 
 
@@ -175,4 +175,41 @@ PropFilenames = {'fem': [PropPath+"ATR72_FinLess_mach1",
                  'AileronPolar': PropPath+"naca3318fl+10.txt"}
 PW = PA.PropWing(g, PropFilenames)
 PW.DeltaCL_a_0 = 1
+
+
+
+
+
+
+
+
+
+import matlab.engine
+
+eng = matlab.engine.start_matlab()
+eng.desktop(nargout=0)
+
+eng.open('Matlab_files\Testing.slx')
+
+eng.workspace['delta_a'] = 0
+eng.workspace['delta_e'] = 0
+eng.workspace['delta_r'] = 0
+eng.workspace['delta_x'] = 0
+
+# eng.sim('Testing.slx') Esto seria para correr el simulink.
+
+# Muy bien! Toda esta parte funciona!! El matlab se abre, el simulink se abre y las variables se crean en el workspace.
+
+
+# Para pasar geometry, PropWing y demas cosas a matlab a ver que se te ocurre:+.
+
+        # Una primera opcion seria guardarlos en el workspace de matlab no?
+
+
+
+print("Hasta aquí majo")
+
+
+
+
 
