@@ -182,6 +182,22 @@ class data:
     alpha_max_fl = 10/180*np.pi
 
 
+    path = 'ATR72_SI_MTOW_FinLess_STAB/'
+    filenameNoFin = [path+'ATR72_FinLess_mach1.stab', path+'ATR72_FinLess_mach2.stab', path+'ATR72_FinLess_mach3.stab',
+                     path +'ATR72_FinLess_mach4.stab', path+'ATR72_FinLess_mach5.stab']
+
+
+    PropPath = "./ATR72_SI_MTOW_Control_FinLess_FEM/"
+    PropFilenames = {'fem': [PropPath+"ATR72_FinLess_mach1",
+                         PropPath+"ATR72_FinLess_mach2",
+                         PropPath+"ATR72_FinLess_mach3",
+                         PropPath+"ATR72_FinLess_mach4",
+                         PropPath+"ATR72_FinLess_mach5"],
+                 'AirfoilPolar': PropPath+"naca3318Pol.txt",
+                 'FlapPolar': PropPath+"naca3318fl+10.txt",
+                 'AileronPolar': PropPath+"naca3318fl+10.txt"}  # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
+
+
 
 
 

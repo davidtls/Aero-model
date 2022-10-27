@@ -12,11 +12,11 @@ Stores the input sample and the output sample into a Matlab file to be used in M
 import numpy as np
 import math
 import scipy.linalg
-import scipy.io #input/output with matlab
+import scipy.io  # input/output with Matlab
 import matplotlib as mpl
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
-from scipy.optimize import  minimize
+from scipy.optimize import minimize
 import sys
 
 

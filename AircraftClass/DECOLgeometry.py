@@ -176,7 +176,16 @@ class data:
     PolarFlDeflDeg = 5
     PolarAilDeflDeg = 5
 
+    path = 'DECOL_STAB/'
+    filenameNoFin = [path + '_FinLess_Vinf10000.stab', path + '_FinLess_Vinf15000.stab', path + '_FinLess_Vinf20000.stab',
+                 path + '_FinLess_Vinf25000.stab', path + '_FinLess_Vinf30000.stab', path + '_FinLess_Vinf35000.stab']
 
+
+    PropPath = "DECOL_FEM/"
+    PropFilenames = {'fem': [PropPath+"_FinLess_Vinf10000.0"],
+                 'AirfoilPolar': PropPath+"S3010_XTr10_Re350.txt",
+                 'FlapPolar': PropPath+"S3010_XTr10_Re350_fl5.txt",
+                 'AileronPolar': PropPath+"S3010_XTr10_Re350_fl5.txt"}  # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
 
 
 

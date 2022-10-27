@@ -346,8 +346,19 @@ class data:
     PolarFlDeflDeg = 30   # Flap deflection for the naca3318fl+10 file used. File read in PattersonAugmented
     PolarAilDeflDeg = 10  # Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
 
+    path = 'X-57_STAB/'
+    filenameNoFin = [path + 'Mach1.stab', path + 'Mach2.stab', path + 'Mach3.stab', path + 'Mach4.stab', path + 'Mach5.stab']
 
 
+    PropPath = "./X-57_FEM/"
+    PropFilenames = {'fem': [PropPath+"Mach1",
+                             PropPath+"Mach2",
+                             PropPath+"Mach3",
+                             PropPath+"Mach4",
+                             PropPath+"Mach5"],
+                     'AirfoilPolar': PropPath+"Airfoil.txt",
+                     'FlapPolar': PropPath+"Airfoil-flap.txt",
+                     'AileronPolar': PropPath+"Airfoil-Aileron-10degree.txt"}
 
 
 

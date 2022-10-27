@@ -59,7 +59,7 @@ Things to check:
 
 
 
-aircraft = {'model': 'X-57'}   #OPTIONS: ATR, DECOL, X-57
+aircraft = {'model': 'ATR'}   #OPTIONS: ATR, DECOL, X-57
 
 
 
@@ -426,52 +426,8 @@ elif aircraft['model'] =='X-57':
 
 #--- List all .stab file from vsp aero and read the coeff ---- 
 
-if g.hangar['aircraft'] == 'ATR72':
-    if g.hangar['version'] == 'original' or g.hangar['version'] == 'DEPoriginal':
-        if g.hangar['version'] == 'original' and g.nofin == True:
-            print("WARNING : Using "+g.hangar['version']+" without rudder. Not recommended...")
-        if g.hangar['version'] == 'DEPoriginal' and g.inop != 0 and g.nofin == True:
-            print("WARNING : Using "+g.hangar['version']+" with inoperative engine and without rudder. Not recommended...")
-#        filename=['ATR72_SI_MTOW_Control_flap.stab', 'ATR72_SI_MTOW_Control_flapVmax.stab',
-#                  'ATR72_SI_MTOW_Control_Vmin.stab','ATR72_SI_MTOW_Control_Manoeuver.stab',
-#                  'ATR72_SI_MTOW_Control_Cruise.stab']
-        path = 'ATR72_SI_MTOW_FinLess_STAB/'
-        filenameNoFin = [path+'ATR72_FinLess_mach1.stab', path+'ATR72_FinLess_mach2.stab', path+'ATR72_FinLess_mach3.stab',
-                   path +'ATR72_FinLess_mach4.stab', path+'ATR72_FinLess_mach5.stab']
-        Matrix = ReadFileUtils.ReadStabCoef(filenameNoFin)
+Matrix = ReadFileUtils.ReadStabCoef(g.filenameNoFin)
         
-
-elif g.hangar['aircraft'] == 'DECOL':
-
-          # --- List all .stab file from vsp aero and read the coeff ----
-          path = 'DECOL_STAB/'
-          filenameNoFin = [path + '_FinLess_Vinf10000.stab',
-                           path + '_FinLess_Vinf15000.stab',
-                           path + '_FinLess_Vinf20000.stab',
-                           path + '_FinLess_Vinf25000.stab',
-                           path + '_FinLess_Vinf30000.stab',
-                           path + '_FinLess_Vinf35000.stab']
-          MatrixNoFin = ReadFileUtils.ReadStabCoef(filenameNoFin)
-          # copy the matrix to avoid error and keep track
-          Matrix = np.copy(MatrixNoFin)
-
-
-elif g.hangar['aircraft'] == 'X-57':
-
-    # --- List all .stab file from vsp aero and read the coeff ----
-    path = 'X-57_STAB/'
-    filenameNoFin = [path + 'Mach1.stab',
-                     path + 'Mach2.stab',
-                     path + 'Mach3.stab',
-                     path + 'Mach4.stab',
-                     path + 'Mach5.stab']
-    MatrixNoFin = ReadFileUtils.ReadStabCoef(filenameNoFin)
-    # copy the matrix to avoid error and keep track
-    Matrix = np.copy(MatrixNoFin)
-
-
-
-
 
 print("Adjusting Kf, Kh and VT size")
 print("New Kf and Kh")
@@ -500,31 +456,13 @@ g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Mach)
 
 # Define here the PropWing interaction
 
-if aircraft['model'] =='ATR':
-
-        PropPath = "./ATR72_SI_MTOW_Control_FinLess_FEM/"
-        PropFilenames = {'fem': [PropPath+"ATR72_FinLess_mach1",
-                                 PropPath+"ATR72_FinLess_mach2",
-                                 PropPath+"ATR72_FinLess_mach3",
-                                 PropPath+"ATR72_FinLess_mach4",
-                                 PropPath+"ATR72_FinLess_mach5"],
-                         'AirfoilPolar': PropPath+"naca3318Pol.txt",
-                         'FlapPolar': PropPath+"naca3318fl+10.txt",
-                         'AileronPolar': PropPath+"naca3318fl+10.txt"}  # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
-        PW = PA.PropWing(g, PropFilenames)
-        PW.DeltaCL_a_0 = 1
+PW = PA.PropWing(g, g.PropFilenames)
+PW.DeltaCL_a_0 = 1
 
 
 
+if aircraft['model']=='DECOL':
 
-elif aircraft['model']=='DECOL':
-
-            PropPath = "DECOL_FEM/"
-            PropFilenames = {'fem': [PropPath+"_FinLess_Vinf10000.0"],
-                             'AirfoilPolar': PropPath+"S3010_XTr10_Re350.txt",
-                             'FlapPolar': PropPath+"S3010_XTr10_Re350_fl5.txt",
-                             'AileronPolar': PropPath+"S3010_XTr10_Re350_fl5.txt"}  # format for prop file : [[Cldist=f(M)],polar clean airfoil, polar flap, polar aile]
-            PW = PA.PropWing(g, PropFilenames)
             #PW.AoAZero[:,-1] = PW.AoAZero[:,-1] + 3.2/180*np.pi #correction for angle of incidence of wing
             PW.AoAZero[:, 0] = PW.AoAZero[:, 0]*10**(-3)
             PW.CLslope[:, 0] = PW.CLslope[:, 0]*10**(-3)
@@ -535,19 +473,6 @@ elif aircraft['model']=='DECOL':
             PW.DeltaCL_a_0 = 1  # CL_alpha correction factor
 
 
-if aircraft['model'] =='X-57':
-
-    PropPath = "./X-57_FEM/"
-    PropFilenames = {'fem': [PropPath+"Mach1",
-                             PropPath+"Mach2",
-                             PropPath+"Mach3",
-                             PropPath+"Mach4",
-                             PropPath+"Mach5"],
-                     'AirfoilPolar': PropPath+"Airfoil.txt",
-                     'FlapPolar': PropPath+"Airfoil-flap.txt",
-                     'AileronPolar': PropPath+"Airfoil-Aileron-10degree.txt"}
-    PW = PA.PropWing(g, PropFilenames)
-    PW.DeltaCL_a_0 = 1
 
 
 
@@ -662,7 +587,7 @@ if g.Long_equilibrium and aircraft['model'] != 'X-57':
     #Long_variables;   (to define a combination of 2 or less)
     alpha_long = "TS"
     gamma_long = 0
-    V_long = 'TS'
+    V_long = 70
     de_long = "TS"
     dx_long = "TS"
     theta_long = "TS"
