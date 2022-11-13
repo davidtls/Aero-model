@@ -626,8 +626,8 @@ if aircraft['model'] =='X-57':
 
           #Long_variables;   (to define a combination of 2 or less)
           alpha_long = "TS"
-          gamma_long = "TS"
-          V_long = "TS"
+          gamma_long = 0
+          V_long = 70
           de_long = "TS"
           theta_long = "TS"
 

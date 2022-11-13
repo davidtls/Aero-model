@@ -332,7 +332,7 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
 
 
     #Matrix to transform a vector from body reference to aero reference
-    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]

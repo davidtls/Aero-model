@@ -19,6 +19,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 import matplotlib.pyplot as plt
 
 
+
 def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
 
@@ -31,13 +32,13 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
 
     # --- Now prepare variables for equations ---
-    V = 77.1677
-    beta = 20*np.pi/180
+    V = 70  # 51.741863715877166
+    beta = 0
     gamma = 0
     omega = 0
 
 
-    alpha = 2*np.pi/180        #0.09727079748668332
+    alpha = 0.2362537139286036
     p = 0  # 0.25 max
     q = 0
     r = 0  # 0.1 max
@@ -45,9 +46,10 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     phi = 0
     theta = alpha
     aileron = 0
-    elevator = 0
+    elevator = -0.20600870692395656
     rudder = 0
-    delta_x = 1
+    delta_x = 0.4    # dx = 0.5
+
 
     g.FlapDefl = 0*np.pi/180  # 15*np.pi/180 , 30*np.pi/180
 
@@ -90,6 +92,9 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     for i in range(int(g.N_eng)):
        x = np.append(x, delta_x)
 
+    #engines = np.array([0.5,0.5,0.5,0.8,0.5,0.5,0.5,0.5,0.2,0.5,0.5,0.5])
+    #x = np.append(x, engines)
+
     I = np.array([[g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz]])
 
 
@@ -110,7 +115,7 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
 
 
     #Matrix to transform a vector from body reference to aero reference
-    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
@@ -150,8 +155,8 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
          h = 1
 
 
-    g.IsPropWing = False
-    g.IsPropWingDrag = False
+    g.IsPropWing = True
+    g.IsPropWingDrag = True
 
 
     F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
@@ -160,12 +165,23 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     printx(x, fixtest, atmo, g, PropWing)
 
 
-    CL = -F[2]/(0.5*rho*V**2 * g.S)
-    CD = -F[0]/(0.5*rho*V**2 * g.S)
-    CY = -F[1]/(0.5*rho*V**2 * g.S)
-    Clroll = -F[3]/(0.5*rho*V**2 * g.S * g.b)
-    Cm = -F[4]/(0.5*rho*V**2 * g.S * g.c)
-    Cn = -F[5]/(0.5*rho*V**2 * g.S * g.b)
+    #CL = -F[2]/(0.5*rho*V**2 * g.S)
+    #CD = -F[0]/(0.5*rho*V**2 * g.S)
+    #CY = -F[1]/(0.5*rho*V**2 * g.S)
+    #Cm = -F[4]/(0.5*rho*V**2 * g.S * g.c)
+
+
+
+
+
+
+    Croll_thrust = Mt[0]/ (0.5 * rho * V ** 2 * g.S * g.b)
+    Cyawthrust = Mt[2]/ (0.5 * rho * V ** 2 * g.S * g.b)
+
+    Clroll = F[3]/(0.5*rho*V**2 * g.S * g.b)
+    Cn = F[5]/(0.5*rho*V**2 * g.S * g.b)
+
+
 
 
     A=np.zeros(10)
@@ -332,7 +348,7 @@ def Constraints_DEP_body(CoefMatrix, atmo, g, PropWing):
 
 
     #Matrix to transform a vector from body reference to aero reference
-    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
@@ -435,9 +451,9 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
 
     # --- Now prepare variables for equations ---
     V =  70
-    alpha = 0.10723828379856166
-    de =  -0.10514575695526691
-    dx =   0.30905799124088
+    alpha = 0.10615368859617
+    de =  -0.0924842169820776
+    dx =   0.3122270558364236
 
 
 
@@ -513,7 +529,7 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
 
 
     #Matrix to transform a vector from body reference to aero reference
-    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]

@@ -64,7 +64,7 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
 
 
     #Matrix to transform a vector from body reference to aero reference
-    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
@@ -109,20 +109,7 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     cosbank = np.sin(theta)*np.sin(alpha)+np.cos(beta)*np.cos(theta)*np.cos(phi)
     
     A = np.zeros(10+g.inop)
-    """
-    "A" created with 10 rows + number of inoperative engines
-    
-    A0 = x
-    A1 = y
-    A2 = z
-    A3 = l
-    A4 = m
-    A5 = n
-    A6 = phi
-    A7 = theta
-    A8 = gamma
-    A9 = Omega
-    """
+
 
     A[0] = -9.81*np.sin(gamma)+(F[0] + F_thrust_aero[0])/g.m
     A[1] = (p*np.sin(alpha) - r*np.cos(alpha))+g.m*9.81*sinbank/(g.m*V) + (F[1] + F_thrust_aero[1])/(g.m*V)
@@ -132,6 +119,7 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
     A[7] = q*math.cos(phi) - r * math.sin(phi)
     A[8] = -np.sin(gamma)+np.cos(alpha)*np.cos(beta)*np.sin(theta)-np.sin(beta)*np.sin(phi)*np.cos(theta)-np.sin(alpha)*np.cos(beta)*np.cos(phi)*np.cos(theta)
     A[9] = -omega + (q*np.sin(phi)+r*np.cos(phi))/np.cos(theta)
+
 
     """
     A[0] = -9.81*np.sin(gamma)*g.m+(F[0] + F_thrust_aero[0])

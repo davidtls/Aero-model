@@ -78,7 +78,7 @@ F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect)
 
 
 #Matrix to transform a vector from body reference to aero reference
-Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
 #Thrust force in body reference
 F_thrust_body = [Fx*np.cos(g.alpha_i + g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i + g.alpha_0+g.ip)]
@@ -117,17 +117,12 @@ F[3:6] = np.transpose(Body2Aero_matrix) @ F[0:2]
 A = np.zeros(10+g.inop)
 
 
-A[0] = (1/g.m) * (F_thrust_body[0] + F[0]) - 9.81*np.sin(theta) +r*v - q*w
-A[1] =(1/g.m)*() + 9.81*np.cos(theta)*np.sin(phi)  + F[1] - r*u + p*w
-A[2] =(1/g.m)*F_thrust_body[2] + 9.81*np.cos(theta)*np.cos(phi) +q*u - p*v
-
+A[0] = (1/g.m)*(F_thrust_body[0] + F[0]) - 9.81*np.sin(theta) +r*v - q*w
+A[1] = (1/g.m)*(F_thrust_body[0] + F[1]) + 9.81*np.cos(theta)*np.sin(phi) - r*u + p*w
+A[2] = (1/g.m)*(F_thrust_body[2] + F[2]) + 9.81*np.cos(theta)*np.cos(phi) + q*u - p*v
 A[3:6] = np.dot(inv(I), np.array([Mt[0], Mt[1], Mt[2]])+F[3:6]-np.cross(np.array([p, q, r]), np.dot(I, np.array([p, q, r]))))
-
-
 A[6] = p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta)
 A[7] = q*math.cos(phi) - r * math.sin(phi)
-
-
 A[8] = -np.sin(gamma)+np.cos(alpha)*np.cos(beta)*np.sin(theta)-np.sin(beta)*np.sin(phi)*np.cos(theta)-np.sin(alpha)*np.cos(beta)*np.cos(phi)*np.cos(theta)
 A[9] = -omega + (q*np.sin(phi)+r*np.cos(phi))/np.cos(theta)
 

@@ -35,8 +35,8 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
         * By defining V and gamma the function will find the set of (alpha de dx    theta)  to accomplish equilibrium.
     """
 
-    MaxIter = 100
-    tolerance = 1e-6
+    MaxIter = 1000
+    tolerance = 1e-10
 
     alpha = vars[0]
     gamma = vars[1]
@@ -49,8 +49,8 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
 
 
     Variables = {'alpha': alpha, 'theta': theta, 'de': de, 'dx': dx , 'V': V, 'gamma': gamma }
-    Bounds = {'alpha': (-5*math.pi/180, 20*math.pi/180), 'theta': (-30/180*math.pi, 30/180*math.pi), 'de': (-23/180*math.pi, 13/180*math.pi), 'dx': (1e-9, 1), 'V': (0, 150), 'gamma': (-30/180*math.pi, 30/180*math.pi)}
-    Initial_guess = {'alpha': 0, 'theta': 0, 'de': 0, 'dx': 0.4, 'V': 40, 'gamma': 0}
+    Bounds = {'alpha': (-5*math.pi/180, 20*math.pi/180), 'theta': (-30/180*math.pi, 30/180*math.pi), 'de': (-23/180*math.pi, 13/180*math.pi), 'dx': (1e-9, 1), 'V': (0, 70), 'gamma': (-30/180*math.pi, 30/180*math.pi)}
+    Initial_guess = {'alpha': 0.10615368859616711, 'theta': 0.10615368859618061, 'de': -0.0924842169820762, 'dx': 0.3122270558364951, 'V': 70, 'gamma': 0}
 
     x0 = []
     fixtest = []
@@ -86,7 +86,9 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
 
     if len(x0) == 4:   # Solving acotated problem
         bnds = (bnds1, bnds2)
-        k = least_squares(Order, x0, args=diccons, bounds=bnds)
+        # V = 70 , gamma = 0
+        # xo = alpha = 0.10615368859616711 theta = 0.10615368859618061 , dx = 0.3122270558364951 , de = -0.0924842169820762
+        k = least_squares(Order, x0, args=diccons, bounds=bnds, max_nfev = 2000, ftol=1e-8, xtol=1e-8)
 
     elif len(x0) >= 5:  # Solving optimization problem. An objective function shall be given.
 
@@ -96,6 +98,8 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
             bnds.append((bnds1[i], bnds2[i]))
 
         bnds = tuple(bnds)
+
+
 
 
         k = minimize(V_min, x0, args=diccons, bounds=bnds,
@@ -342,7 +346,7 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
 
 
     #Matrix to transform a vector from body reference to aero reference
-    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(beta)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
+    Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
     #Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
@@ -377,24 +381,49 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
 
     #F gives out aerodinamical forces in aero axis: Drag, lateral force and lift and moments
     # Does not give out X,Y,Z
+    Aero2Body_matrix = np.transpose(Body2Aero_matrix)
 
-    CL = -F[2]/(0.5*rho*V**2 * g.S)
-    CD = -F[0]/(0.5*rho*V**2 * g.S)
+    F_aero_bodyref = Aero2Body_matrix @ F[0:3]
 
 
-    #     Now sum up the constraints:
+
+
+
+
+
+
 
 
     A = np.zeros(4)
 
     """
+    Version 1 
+    Equations in aero frame. 
+    By using this formulation you get directly V_dot, alpha_dot, gamma_dot, but the equations
+    expressed like this (divided by g.m or g.Iy) are way smaller and its more easier to accomplish with 
+    A = 0 with same tolerance. In other words, if you write them like in version 2 you are decrasing tolerance.
+    
     A[0] = +(F[0] + F_thrust_aero[0])/g.m
     A[1] = 9.81/V + (F[2] + F_thrust_aero[2])/(g.m*V)
     A[2] = (Mt[1] + F[4])/g.Iy
     A[3] = alpha + gamma - theta
     """
+
+    """
+    Version 2. 
+    Equations in aero frame. Keep in mind there are not V_dot, alpha_dot or gamma_dot
     A[0] = +(F[0] + F_thrust_aero[0]) - 9.81*g.m*np.sin(gamma)
     A[1] = 9.81*g.m*np.cos(gamma) + (F[2] + F_thrust_aero[2])
+    A[2] = (Mt[1] + F[4])
+    A[3] = alpha + gamma - theta
+    """
+
+
+
+
+
+    A[0] = +(F_aero_bodyref[0] + F_thrust_body[0]) - 9.81*g.m*np.sin(theta)
+    A[1] = 9.81*g.m*np.cos(theta) + (F_aero_bodyref[2] + F_thrust_body[2])
     A[2] = (Mt[1] + F[4])
     A[3] = alpha + gamma - theta
 
