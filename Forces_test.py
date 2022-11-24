@@ -450,10 +450,10 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
 
 
     # --- Now prepare variables for equations ---
-    V =  70
-    alpha = 0.10615368859617
-    de =  -0.0924842169820776
-    dx =   0.3122270558364236
+    V = 40.145
+    alpha = 18 * np.pi/180
+    de = 0*np.pi/180
+    dx = 0.39
 
 
 
@@ -471,7 +471,7 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     dr = 0
 
 
-    g.FlapDefl = 0 * np.pi/180  # 15*np.pi/180 , 30*np.pi/180
+    g.FlapDefl = 30 * np.pi/180  # 15*np.pi/180 , 30*np.pi/180
 
 
 
@@ -562,9 +562,14 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     # Does not give out X,Y,Z
 
 
+    CD = -F[0]/(0.5*rho*V**2 * g.S)
+    CY = -F[1]/(0.5*rho*V**2 * g.S)
+    CL = -F[2]/(0.5*rho*V**2 * g.S)
+    Clroll = F[3]/(0.5*rho*V**2 * g.S * g.b)
+    Cm = F[4]/(0.5*rho*V**2 * g.S * g.c)
+    Cn = F[5]/(0.5*rho*V**2 * g.S * g.b)
+
     #     Now sum up the constraints:
-
-
     A = np.zeros(4)
 
 
@@ -581,7 +586,7 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     for i in range(int(g.N_eng)):
          x = np.append(x, dx)
 
-    #printx(x, fixtest, atmo, g, PropWing)
+    printx(x, fixtest, atmo, g, PropWing)
 
     CL = -F[2]/(0.5*rho*V**2 * g.S)
     CD = -F[0]/(0.5*rho*V**2 * g.S)
@@ -634,9 +639,9 @@ def printx(x, fix, atmo, g, PW):
 
     if g.IsPropWing:
         if V <= g.VelFlap or g.FlapDefl != 0:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, beta, x[1], V, x[3])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect, atmo)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], g.FlapDefl, g, False, beta, x[1], V, x[3])
         else:
-            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, beta, x[1], V, x[3])
+            PW.PlotDist(g.Thrust(x[-g.N_eng:], V_vect, atmo)/(2*atmo[1]*g.Sp*V**2), V/atmo[0], atmo, x[0], x[6], 0, g, False, beta, x[1], V, x[3])
 
     if g.nofin==False:
         print("dr = {0:0.2f}\xb0".format(x[8]/math.pi*180))

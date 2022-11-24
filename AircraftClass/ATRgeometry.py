@@ -72,7 +72,7 @@ class data:
     Ix = 289873  # Kg/m^2
     Iy = 298442  # Kg/m^2
     Iz = 573579  # Kg/m^2
-    Ixz = 0      # Kg/m^2
+    Ixz = 1000      # Kg/m^2
 
 
     # --- Power ---
@@ -182,12 +182,15 @@ class data:
     alpha_max_fl = 10/180*np.pi
 
 
-    path = 'ATR72_SI_MTOW_FinLess_STAB/'
+
+
+    path = 'D:/dplanasa/Documents/GitHub/Patterson_code/ATR72_SI_MTOW_FinLess_STAB/'
+
     filenameNoFin = [path+'ATR72_FinLess_mach1.stab', path+'ATR72_FinLess_mach2.stab', path+'ATR72_FinLess_mach3.stab',
                      path +'ATR72_FinLess_mach4.stab', path+'ATR72_FinLess_mach5.stab']
 
+    PropPath = "D:/dplanasa/Documents/GitHub/Patterson_code//ATR72_SI_MTOW_Control_FinLess_FEM/"
 
-    PropPath = "./ATR72_SI_MTOW_Control_FinLess_FEM/"
     PropFilenames = {'fem': [PropPath+"ATR72_FinLess_mach1",
                          PropPath+"ATR72_FinLess_mach2",
                          PropPath+"ATR72_FinLess_mach3",

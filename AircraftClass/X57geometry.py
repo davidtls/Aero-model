@@ -15,13 +15,13 @@ First:
          150 knots (77.1677 m/s) at 8000 ft (2438.4 m)
          Cruise CL = 0.75 at angle of attack 0°
          The predicted cruise wing drag coefficient is of 0.02191
-         The total cruise is around CD_cruise = 0.0537249
+         The total cruise is around CD_cruise = 0.0537249   ellos dicen 0.05423
 
          Propellers speed at speed cruise 2250 rpm
 
 
 Second:
-         Take-off with 30° deflexion of flaps. 12 high lift propellers activated. Cruise propellers deactivated.
+         Take-off with 30° deflection of flaps. 12 high lift propellers activated. Cruise propellers deactivated.
          There is a required lift coefficient of 3.95 for the stall speed of 58 knots (29.8378)
 
          The unblown maximum lift coefficient of the high-lift wing (with the 30° flap setting) is 2.439, that means
@@ -710,10 +710,9 @@ class data:
         # returns a vector
 
         J = V / ((4800/60) * self.Dp)
-        Thr = (atmo[1] * ((4800/60))**2 * self.Dp**4) * (-0.1084*J**2 - 0.1336*J + 0.3934)
+        Thr = (atmo[1] * ((4800/60))**2 * self.Dp**4) * (-0.1084*J**2 - 0.1336*J + 0.3934)*dx
         # Interpolation of High Lift Propellers Ct - J from XROTOR:
         # X-57 “Maxwell” High-Lift Propeller Testing and Model Development,  Fig 14
-
 
         return Thr
 

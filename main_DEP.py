@@ -59,7 +59,7 @@ Things to check:
 
 
 
-aircraft = {'model': 'ATR'}   #OPTIONS: ATR, DECOL, X-57
+aircraft = {'model': 'X-57'}   #OPTIONS: ATR, DECOL, X-57
 
 
 
@@ -210,17 +210,17 @@ elif aircraft['model'] == 'X-57':
     from AircraftClass import X57geometry
     from StabilityMapUtils import LongitudinalX57
 
-    HLP = False
+    HLP = True
     if HLP:
         Neng = 12
         FlapDefl = 30 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 10 and 30 degree
-        V_base = 35
-        H_base = 0  # in m the altitude : 2434 m (cruise) / 0 m take-off
+        V_base = 40.145
+        H_base = 762   # in m the altitude : 2434 m (cruise) / 0 m take-off
     else:
         Neng = 2
         FlapDefl = 0 * np.pi / 180
         V_base = 77.1677         # 77.1677 (cruise)   or stall speed (Vsr=29.84)
-        H_base = 2434  # in m the altitude : 2434 m (cruise) / 0 m take-off
+        H_base = 762  # in m the altitude : 2434 m (cruise) / 0 m take-off
 
     inop_eng = 0
 
@@ -256,14 +256,14 @@ elif aircraft['model'] == 'X-57':
 
         # ensures alpha fuselage as reference for stall. Stall angle from GNEW5BP93B airfoil documentation.
         g.alpha_max = 18 / 180 * np.pi - g.alpha_0    # See explanation for ATR and keep in mind here alpha_i is 0 (no wing-fuselage offset)
-        g.alpha_max_fl = 18 / 180 * np.pi - g.alpha_0
+        g.alpha_max_fl = 12 / 180 * np.pi - g.alpha_0
 
     else:
         g.IsPropWing = False
         g.IsPropWingDrag = False
 
         g.alpha_max = 18 / 180 * np.pi - g.alpha_0    # See explanation for ATR and keep in mind here alpha_i is 0 (no wing-fuselage offset)
-        g.alpha_max_fl = 18 / 180 * np.pi - g.alpha_0
+        g.alpha_max_fl = 12 / 180 * np.pi - g.alpha_0
 
 
 
@@ -486,7 +486,7 @@ if aircraft['model']=='DECOL':
 
 #Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
 #Forces_comparison = Forces_test.Constraints_DEP_body(Coef_base, atmospher, g, PW)
-#Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
+Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
 
 
 
