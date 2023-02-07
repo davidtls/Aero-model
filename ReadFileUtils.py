@@ -71,7 +71,7 @@ def ReadAlpha0_Improved(file):
 
     interpolation = interp1d(alphaTemp, CLTemp)
 
-    Alpha0 = - interpolation(0)/( (interpolation(4) - interpolation(-5))/ (4 - -5))
+    Alpha0 = - interpolation(0)/((interpolation(4)-interpolation(-5))/(4 - -5))
 
     return Alpha0
 

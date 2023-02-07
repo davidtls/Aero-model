@@ -41,6 +41,7 @@ import CL_figure
 
 import Forces_test
 from StabilityMapUtils import Longitudinal
+from StabilityMapUtils import Equilibrated_polar as EQ
 
 
 """
@@ -144,7 +145,8 @@ elif aircraft['model'] == 'ATR':
     H_base = 0  # in m the altitude
     V_base = 70          #1.3 * Vsr
     beta_base = 0 / 180 * math.pi
-    gamma = 0                                                                                                           # previous condition  np.arctan(3 / 100)  # (3/100)/180*np.pi##math.atan(0/87.4)#/180*math.pi # 3% slope gradient # Best climb rate: 6.88m/s vertical @ 87.5m/s = 4.5°gamma, see http://www.atraircraft.com/products_app/media/pdf/Fiche_72-600_Juin-2014.pdf
+    gamma = 0
+    # Climb condition  np.arctan(3 / 100)  # (3/100)/180*np.pi##math.atan(0/87.4)#/180*math.pi # 3% slope gradient # Best climb rate: 6.88m/s vertical @ 87.5m/s = 4.5°gamma, see http://www.atraircraft.com/products_app/media/pdf/Fiche_72-600_Juin-2014.pdf
     R = 000  # in meters the turn radius
     phimax = 5  # in degree the max bank angle authorized
     alphamax = 25  # in degree, stall bound for trimming
@@ -208,7 +210,7 @@ elif aircraft['model'] == 'ATR':
 
 elif aircraft['model'] == 'X-57':
     from AircraftClass import X57geometry
-    from StabilityMapUtils import LongitudinalX57
+    from StabilityMapUtils import Longitudinal
 
     HLP = True
     if HLP:
@@ -262,8 +264,6 @@ elif aircraft['model'] == 'X-57':
         g.IsPropWing = False
         g.IsPropWingDrag = False
 
-        g.alpha_max = 18 / 180 * np.pi - g.alpha_0    # See explanation for ATR and keep in mind here alpha_i is 0 (no wing-fuselage offset)
-        g.alpha_max_fl = 12 / 180 * np.pi - g.alpha_0
 
 
 
@@ -489,6 +489,7 @@ if aircraft['model']=='DECOL':
 Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
 
 
+# k, x, fixtest, diccons = EQ.Equilpolar(Matrix, CoefMatrix, Mach, g, PW)
 
 
 
@@ -559,7 +560,8 @@ if g.Complete_Optimization == True:
 
 
 
-if g.Long_equilibrium and aircraft['model'] != 'X-57':
+
+if g.Long_equilibrium:
 
     """
      Function for longitudinal analysis.
@@ -587,7 +589,7 @@ if g.Long_equilibrium and aircraft['model'] != 'X-57':
     #Long_variables;   (to define a combination of 2 or less)
     alpha_long = "TS"
     gamma_long = 0
-    V_long = 70
+    V_long = 40.145
     de_long = "TS"
     dx_long = "TS"
     theta_long = "TS"
@@ -595,45 +597,6 @@ if g.Long_equilibrium and aircraft['model'] != 'X-57':
     vars = [alpha_long, gamma_long, V_long, de_long, dx_long, theta_long]
 
     k, x, fixtest, diccons = Longitudinal.Long_Equilibrium(Coef_base, atmospher, g, PW, vars)
-
-
-
-
-if aircraft['model'] =='X-57':
-   if g.HLP:
-
-          """
-           Function for longitudinal analysis.
-           * 5 variables can be played with : alpha, gamma, V, de, theta
-           * There are a total of 4 equations, two for forces in axes x and z, one for moments, and one relating gamma,
-             alpha and theta.
-          
-            Function has two ways of working:
-           * If one variables are defined among these 6, then the function will give away the value of the other four.
-           * If zero variables are defined, then the function will give a set of 5 variables that optimize
-             a given function that must be defined.
-           * If more than one variable is defined problem may be over-constrained and no solution will be given.
-          
-          
-           For defining a variable just be careful to give it a value inside the possible limits.
-           For leaving a variable undefined just define it as a string.
-          
-          Examples:
-          * When defining no variable the function will find the minimum speed (stall speed) at the altitude given (while the
-            objective function is V_min) (OPTIMIZATION PERFORMED).
-          * By defining V the function will find the set of (alpha de gamma theta) to accomplish equilibrium.
-          """
-
-          #Long_variables;   (to define a combination of 2 or less)
-          alpha_long = "TS"
-          gamma_long = 0
-          V_long = 70
-          de_long = "TS"
-          theta_long = "TS"
-
-          vars = [alpha_long, gamma_long, V_long, de_long, theta_long]
-
-          k, x, fixtest, diccons = LongitudinalX57.Long_Equilibrium(Coef_base, atmospher, g, PW, vars)
 
 
 

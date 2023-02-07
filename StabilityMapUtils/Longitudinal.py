@@ -24,7 +24,6 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
            a given function that must be defined.
          * If more than two variables are defined problem may be over-constrained and no solution will be given.
 
-    
     For defining a variable just be careful to give it a value inside the possible limits.
     For leaving a variable undefined just define it as a string.
 
@@ -63,11 +62,11 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
     for key, value in Variables.items():
 
         if type(value) != str:
-               fixtest.append(value)
+               fixtest.append(value)  # Value has been fixed so it is assigned to fixtest
                fixtestorder.append(key)
 
         else:
-                x0.append(Initial_guess[key])
+                x0.append(Initial_guess[key]) # Value has not been fixed so it has to be solved in x
                 xorder.append(key)
                 bnds1.append(Bounds[key][0])
                 bnds2.append(Bounds[key][1])
@@ -88,7 +87,7 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
         bnds = (bnds1, bnds2)
         # V = 70 , gamma = 0
         # xo = alpha = 0.10615368859616711 theta = 0.10615368859618061 , dx = 0.3122270558364951 , de = -0.0924842169820762
-        k = least_squares(Order, x0, args=diccons, bounds=bnds, max_nfev = 2000, ftol=1e-8, xtol=1e-8)
+        k = least_squares(Order, x0, args=diccons, bounds=bnds, max_nfev=2000, ftol=1e-8, xtol=1e-8)
 
     elif len(x0) >= 5:  # Solving optimization problem. An objective function shall be given.
 
@@ -111,13 +110,10 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
         sys.exit()
 
     # check if constraints are validated
-    constraints_calc = Order(k.x, *diccons)
-    print("\nConstraints")
+    #constraints_calc = Order(k.x, *diccons)
+    #print("\nConstraints")
 
-
-
-
-
+    # Retrieves from k.x and fixtest the values V, alpha, de, dx, theta, gamma
     i = -1
     for key in xorder:
         i = i+1
@@ -149,12 +145,16 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
         elif key == 'gamma':
              gamma = fixtest[i]
 
+    # Orders V, alpha, de, dx, theta, gamma values into standard main_DEP code
+    #       x = [alpha, p, q ,r, phi, theta, da, de, dr, dx]
+    #       fixtest = [V, beta, gamma, omega]
+    # so constraints can be calculated with equation.constraints
+
     x = np.concatenate((np.array([alpha, 0, 0, 0, 0, theta, 0, de, 0]), np.full(g.N_eng, dx)))
     fixtest = np.array([V, 0, gamma, 0])
 
     # for coherance shall be
-    #       x = [alpha, p, q ,r, phi, theta, da, de, dr, dx]
-    # fixtest = [V, beta, gamma, omega]
+
 
     return k, x, fixtest,  (fixtest, np.copy(Coef_base), atmospher, g, PW)
 
@@ -167,9 +167,7 @@ def Order(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
 
     """
     You need at the end a vector like this
-    -x =[V, alpha, theta, de, dx, gamma]
-
-
+    -x =[V, alpha, theta, de, dx, gamma] for def Long_equations
     """
 
     x = np.zeros(6)

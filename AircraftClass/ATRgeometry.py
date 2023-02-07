@@ -93,7 +93,6 @@ class data:
     z_h_w = 3.371  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. positive if tail is over.
     lh = 14.2183   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
     lh2 = 12.09    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
-    K_e = 1.35     # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     c_ht = 1.54    # Average chord of the horizontal tail
 
     cm_0_s = -0.0494 # +  (0.2941)*Var_xac_fus/c  #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
@@ -102,8 +101,7 @@ class data:
     aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
     aht2 = 0.78082       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
     Cm_alpha_wb = 1.173310  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
-    # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
-    # Cm_alpha_fus =
+
 
 
 
@@ -115,7 +113,7 @@ class data:
     CD0T = 0.03383  # from OpenVSP, parasitic zero lift drag      THESIS HAMBURG 0.027403
     CD0T_wo_VT = 0.03112
     CL0 = 0.516688      # Total CL0 including horizontal tail
-    CL0_HT = -0.0284    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
+    CL0_HT = -0.0284    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (downwash and tail dynamic pressure)
     Cm0 = 0.035015
     Cm0_wo_HT = -0.129536    # Cm0 of aircraft less horizontal tail
 

@@ -93,7 +93,6 @@ class data:
     z_h_w = 0.025  # vertical distance from the horizontal tail 1/4 point to the propeller axis. Computed with OpenVSP. Positive if tail is over
     lh = 1.16575    # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
     lh2 = 0.942  # Horizontal distance from the wing trailing edge to the horizontal tail leading edge. Computed with OpenVSP
-    K_e = 1.44   # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     c_ht = 0.145  # Average chord of the horizontal tail
     var_eps = 1.5  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     cm_0_s = -0.0512  #    +  (0.2792)*Var_xac_fus/c     zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°

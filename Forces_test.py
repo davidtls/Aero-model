@@ -1,8 +1,7 @@
 
 """
-Useful model for giving out the aerodynamic forces whichever the variables from state vector and fix vector are, so not
-need for trim. If Aeroforces is changed it should be changed here too.
-
+Useful model for computing the aerodynamic forces whichever the variables from state vector and fix vector are.
+Therefore they can be calculated outside a trim state.
 author: david.planas-andres
 
 """
@@ -445,35 +444,40 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     """
 
 
+    """
+    ATR-72 equilibrium conditions
+    V = 70
+    alpha = 0.10580232050347024
+    de = -0.08785341123127563
+    dx = 0.3121325483658943
+    """
+
+    """
+    X-57 equilibrium conditions
+    V = 40.145
+    alpha = 0.0070674911658034625
+    de = -0.31381389162636214
+    dx = 0.9999996478122892    
+    """
+
     rho = atmo[1]
-
-
 
     # --- Now prepare variables for equations ---
     V = 40.145
-    alpha = 18 * np.pi/180
-    de = 0*np.pi/180
-    dx = 0.39
-
-
+    alpha = 0.0070674911658034625
+    de = -0.31381389162636214
+    dx = 0.9999996478122892
 
     beta = 0
     gamma = 0
-
     p = 0
     q = 0
     r = 0
-
     phi = 0
     theta = alpha
     da = 0
-
     dr = 0
-
-
     g.FlapDefl = 30 * np.pi/180  # 15*np.pi/180 , 30*np.pi/180
-
-
 
     if g.FlapDefl == 0:
         g.Cd0_fl = 0
@@ -506,40 +510,25 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
         g.eps0 = g.eps0_flaps30
         g.deps_dalpha = g.deps_dalpha_flaps30
 
-
-
-
     I = np.array([[g.Ix, 0, -g.Ixz], [0, g.Iy, 0], [-g.Ixz, 0, g.Iz]])
 
-
     # --- Compute aerodynamic forces ---
-    #here subvector  must be : (alpha, beta, p, q, r, da, de,dr)
+    # here subvector  must be : (alpha, beta, p, q, r, da, de,dr)
     sub_vect = np.array([alpha, beta, p, q, r, da, de, dr])  # rudder is allowed
 
-
-    #Thrust forces and moments
-
+    # Thrust forces and moments
     V_vect = np.ones(g.N_eng) * V * np.cos((-np.sign(g.yp)) * beta + g.wingsweep) - r * g.yp
-
-
-
     Fx_vec = g.Thrust(np.full(g.N_eng, dx), V_vect, atmo)
     Fx = np.sum(Fx_vec)
 
-
-
-    #Matrix to transform a vector from body reference to aero reference
+    # Matrix to transform a vector from body reference to aero reference
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
-    #Thrust force in body reference
+    # Thrust force in body reference
     F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
-
-
-
 
     # Thrust force is transformed from body to aero reference
     F_thrust_aero = Body2Aero_matrix @ F_thrust_body
-
 
     # Moment of thrust is obtained in body reference
     Moment = np.zeros((g.N_eng, 3))
@@ -551,16 +540,12 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
 
     Mt = Thrust_moment_body
 
-
-    # convert thrust in Tc for patterson
-    Tc = Fx_vec/(2*rho*g.Sp*V**2)                                                                                       #For adimension V, has already been used for calculating FXi
+    # Convert thrust in Tc for patterson
+    Tc = Fx_vec/(2*rho*g.Sp*V**2)  # For turning dimensionless use V, V_vect has already been used for calculating FXi
 
     F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc, atmo, g, PropWing)
 
-
-    #F gives out aerodinamical forces in aero axis: Drag, lateral force and lift and moments
-    # Does not give out X,Y,Z
-
+    # F gives CD CY CL aerodynamic forces in aero ref, Moments in body ref.
 
     CD = -F[0]/(0.5*rho*V**2 * g.S)
     CY = -F[1]/(0.5*rho*V**2 * g.S)
@@ -572,12 +557,10 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     #     Now sum up the constraints:
     A = np.zeros(4)
 
-
     A[0] = +(F[0] + F_thrust_aero[0])
     A[1] = 9.81*g.m + (F[2] + F_thrust_aero[2])
     A[2] = (Mt[1] + F[4])
     A[3] = alpha + gamma - theta
-
 
     fixtest = np.array([V, beta, gamma, 0])
 
@@ -586,11 +569,81 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     for i in range(int(g.N_eng)):
          x = np.append(x, dx)
 
-    printx(x, fixtest, atmo, g, PropWing)
+    # printx(x, fixtest, atmo, g, PropWing)
 
-    CL = -F[2]/(0.5*rho*V**2 * g.S)
-    CD = -F[0]/(0.5*rho*V**2 * g.S)
 
+
+    # Plotting epsilon and Cm
+    alpha_vector = np.linspace(-5, 20, 26)*np.pi/180
+    dx_vector = np.linspace(0, 1, 6)
+    Tc = np.zeros((len(dx_vector), g.N_eng))
+
+    Cm_matrix = np.zeros((len(dx_vector), len(alpha_vector)))
+    CL_matrix = np.zeros((len(dx_vector), len(alpha_vector)))
+    CD_matrix = np.zeros((len(dx_vector), len(alpha_vector)))
+    epsilon_matrix = np.zeros((len(dx_vector), len(alpha_vector)))
+
+    for i in range(len(dx_vector)):
+        Fx_vec = g.Thrust(np.full(g.N_eng, i), V_vect, atmo)
+        Tc[i, :] = Fx_vec/(2*rho*g.Sp*V**2)
+
+        for j in range(len(alpha_vector)):
+            sub_vect = np.array([alpha_vector[j], beta, p, q, r, da, de, dr])
+            CL_matrix[i, j] = -AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)[0] / (0.5*rho*V**2 * g.S)
+            CD_matrix[i, j] = -AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)[2] / (0.5*rho*V**2 * g.S)
+            Cm_matrix[i, j] = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)[4] / (0.5*rho*V**2 * g.S * g.c)
+            epsilon_matrix[i, j] = AeroForces.Cm_and_CL_tail(V, CoefMatrix, sub_vect, Tc[i,:], atmo, g, PropWing)[2]
+
+
+    fig1 = plt.figure()
+    ax1 = fig1.gca()
+    for i in range(len(dx_vector)):
+       ax1.plot(alpha_vector*180/np.pi, Cm_matrix[i, :], label="$T_c$ = {0:0.3f}".format(Tc[i, 0]), linestyle=":", color='r', alpha = 0.2 + 0.8*i/11)
+
+    ax1.set_xlabel('alpha (°)')
+    ax1.set_ylabel('Cm')
+    ax1.legend()
+    ax1.grid()
+    fig1.tight_layout()
+
+
+    fig2 = plt.figure()
+    ax2 = fig2.gca()
+    for i in range(len(dx_vector)):
+        ax2.plot(alpha_vector*180/np.pi, epsilon_matrix[i, :]*180/np.pi, label="$T_c$ = {0:0.3f}".format(Tc[i, 0]), linestyle=":", color='g', alpha = 0.2 + 0.8*i/11)
+
+    ax2.set_xlabel('alpha (°)')
+    ax2.set_ylabel('Downwash')
+    ax2.legend()
+    ax2.grid()
+    fig2.tight_layout()
+
+
+    fig3 = plt.figure()
+    ax3 = fig3.gca()
+    for i in range(len(dx_vector)):
+        ax3.plot(alpha_vector*180/np.pi, CL_matrix[i, :], label="$T_c$ = {0:0.3f}".format(Tc[i, 0]), linestyle=":", color='g', alpha = 0.2 + 0.8*i/6)
+
+    ax3.set_xlabel('alpha (°)')
+    ax3.set_ylabel('CL')
+    ax3.legend()
+    ax3.grid()
+    fig3.tight_layout()
+
+
+
+    fig4 = plt.figure()
+    ax4 = fig4.gca()
+    for i in range(len(dx_vector)):
+        ax4.plot(alpha_vector*180/np.pi, CD_matrix[i, :], label="$T_c$ = {0:0.3f}".format(Tc[i, 0]), linestyle=":", color='b', alpha = 0.2 + 0.8*i/6)
+
+    ax4.set_xlabel('alpha (°)')
+    ax4.set_ylabel('CD')
+    ax4.legend()
+    ax4.grid()
+    fig4.tight_layout()
+
+    plt.show(block=True)
 
 
 

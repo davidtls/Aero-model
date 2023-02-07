@@ -272,10 +272,6 @@ class data:
     aht2 = 1.5578     # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S. In radians
     Cm_alpha_wb = 0.0134 *180/np.pi  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail. In radians
 
-    K_e = -0.0085 * lh2 ** 3 + 0.1078 * lh2 ** 2 - 0.5579 * lh2 + 2.4546   # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
-
-
-
 
     # alpha=0 coeff 77.67 m/s
 

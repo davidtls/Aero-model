@@ -164,6 +164,9 @@ class PropWing:
         
         if plane.isail == True:
             self.alpha0_ail = (Read.ReadAlpha0_Improved(Files['AileronPolar']) - Read.ReadAlpha0_Improved(Files['AirfoilPolar']))/plane.PolarAilDeflDeg
+
+        # Both self.alpha0_fl and self.alpha0_ail are expressed in degrees/ degrees = rad/rad.
+        # Is the change in degrees of the alpha_0 value for every degree of deflection of aileron/flap
             
       
             
@@ -917,58 +920,3 @@ class PropWing:
 
 
 
-
-
-
-
-
-
-    def Augmented_velocity_wing(self, Tc, Mach, atmospher, aoa, dail, dfl, plane, beta, p, V, r):
-
-        rho = atmospher[1]
-
-
-        V_vect = V * (np.cos((-np.sign(plane.yp)) * beta + plane.wingsweep)) - r * plane.yp
-        T = Tc * (2 * rho * V ** 2 * plane.Sp)
-
-        myw = np.zeros(len(Tc))
-        muu = np.zeros(len(Tc))
-
-        for i in range(len(Tc)):
-            if Tc[i] == 0:
-                 #No Thrust, no need to solve the equation
-                 myw[i] = 0
-            else:
-                 coef = [1, 2*np.cos(aoa-plane.alpha_0+plane.ip), 1, 0, - (T[i] / (2 * rho * plane.Sp * V_vect[i]**2)) ** 2]
-                 roots = np.roots(coef)
-                 #get the real positive root
-                 for j in range(len(roots)):
-                     if np.real(roots[j])>0:
-                         myw[i]=np.real(roots[j])
-            # test the negative thrust effects by simply setting negative roots
-            if Tc[i] < 0:
-                 muu[i] = 2*myw[i]
-            else:
-                 muu[i] = 2*myw[i]
-
-
-
-        #get wing alpha0
-        alpha0w = self.Interpol(self.AoAZero, Mach)  # test with section zero lift angle
-        alpha0w = alpha0w[:, -1]  # keep only alpha0
-
-        #Get the local slope
-        NormCl = self.Interpol(self.CLslope, Mach)
-
-
-        Velocity = V * (np.cos((-np.sign(NormCl[:, 0])) * beta + plane.wingsweep)) - r * NormCl[:, 0]
-        alpha_t = aoa - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
-        alpha_t_mean = np.mean(alpha_t)
-
-
-
-        V_ef_TO_V_inf = (1 + 2*muu[0]*np.cos(alpha_t_mean + plane.ip) + (muu[0])**2 )**0.5
-        Pressure_ratio = V_ef_TO_V_inf**2
-
-
-        return Pressure_ratio
