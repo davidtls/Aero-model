@@ -28,30 +28,31 @@ class data:
 
 
     # --- Mass ---
-    x_cg = 11.75  # (m)
-    m = 21500  # Kg (base 21.5T, MTOW : 23T, MLW : 22.35T    MZFW : 21T   MFL : 5T  MPL : 7.5T)
+    x_cg = 11.75  # [m] (behind the tip)
+    m = 21500  # [Kg] (base 21.5T, MTOW : 23T, MLW : 22.35T    MZFW : 21T   MFL : 5T  MPL : 7.5T)
 
 
     # --- Geometry --- 
-    S = 61.0  # m^2
-    b = 27.05  # m
-    c = 2.324481  # m Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
-    lv = 25.84 - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
-    zf = 2  # z position of the MAC of the fin, in reality a suitable height
-    lemac = 11.24  # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
-    fswept = 35/180*math.pi  # sweep angle of VT
-    ftaper = 0.55  # taper ratio of VT
-    fAR = 1.57  # aspect ratio of VT
-    FusWidth = 2.82
-    bh = 7.21  # in m the HT wingspan
-    Sh = 11.13  # Horizontal tail surface
-    Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 1.02     Volume coefficient of Horizontal tail
-    it = -0.5 * np.pi/180                  # Horizontal tail tilt angle
-    taudr = 0.30  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
-    Var_xac_fus = -0.69    # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
+    S = 61.0  # [m^2] Wing surface
+    b = 27.05  # [m] Wingspan
+    c = 2.324481  # [m] Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
+    lv = 25.84 - x_cg  # [m] Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
+    zf = 2  # [2] z position of the MAC of the fin, in reality a suitable height. Here is positive if tail is over the cg.
+    lemac = 11.24  # [m] Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
+    fswept = 35/180*math.pi  # [rad] Sweep angle of VT
+    ftaper = 0.55  # Taper ratio of VT
+    fAR = 1.57  # Aspect ratio of VT
+    FusWidth = 2.82  # [m]
+    bh = 7.21  # [m] HT wingspan
+    Sh = 11.13  # [m^2] Horizontal tail surface
+    Hor_tail_coef_vol = (Sh*lv) / (S*c)  # Volume coefficient of Horizontal tail = 1.02
+    it = -0.5 * np.pi/180  # [rad] Horizontal tail tilt angle.
+    taudr = 0.30  # Ruder efficiency factor see nicolosi paper and dela-vecchia thesis. A comprehensive review of vertical tail design
+    Var_xac_fus = -0.69    # [m] Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
+    # Fuselage moves forward the neutral point, so (Xnp(wing) - Xnp(wing+fuselage)) < 0
 
-    wingsweep = 0  # radians, in ATR there is not sweep
-    dihedral = 0
+    wingsweep = 0  # [rad] Sweep angle of the wing
+    dihedral = 0  # [rad] Dihedral angle of the wing
 
 
     # flap and aileron definition
@@ -69,18 +70,18 @@ class data:
 
 
     # Inertia terms are obtained from VSPaero for an homogeneous weight distribution
-    Ix = 289873  # Kg/m^2
-    Iy = 298442  # Kg/m^2
-    Iz = 573579  # Kg/m^2
-    Ixz = 1000      # Kg/m^2
+    Ix = 289873  # [Kg/m^2]
+    Iy = 298442  # [Kg/m^2]
+    Iz = 573579  # [Kg/m^2]
+    Ixz = 1000   # [Kg/m^2]
 
 
     # --- Power ---
-    P_a = 2.051*10**6  # power consumed by one engine in the original ATR 72 bi-engine
-    P_var = P_a        # power consumed by one engine in the original ATR 72 bi-engine
+    P_a = 2.051*10**6  # [w] power consumed by one engine in the original ATR 72 bi-engine
+    P_var = P_a        # [w] power consumed by one engine in the original ATR 72 bi-engine
     hp = 0  # rotor term
     prop_eff = 0.8
-    ip = -1.6/180*np.pi  # propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line
+    ip = -1.6/180*np.pi  # [rad] propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line
     Pkeyword = 'Default'  # designate the propulsion model used to compute thrust
 
 
@@ -90,17 +91,17 @@ class data:
 
 
     # --- Distances ---
-    z_h_w = 3.371  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. positive if tail is over.
-    lh = 14.2183   # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
-    lh2 = 12.09    # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
-    c_ht = 1.54    # Average chord of the horizontal tail
+    z_h_w = 3.371  # [m] vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. positive if tail is over.
+    lh = 14.2183   # [m] Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
+    lh2 = 12.09    # [m] Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
+    c_ht = 1.54    # [m] Average chord of the horizontal tail
 
     cm_0_s = -0.0494 # +  (0.2941)*Var_xac_fus/c  #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
     # ---Unique coeff ---
-    aht = 0.6131        # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
-    aht2 = 0.78082       # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
-    Cm_alpha_wb = 1.173310  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
+    aht = 0.6131        # [1/rad] Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
+    aht2 = 0.78082       # [1/rad] Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
+    Cm_alpha_wb = 1.173310  # [1/rad] Cm_alpha_wb from OpenVSP Aircraft without hor. tail
 
 
 
@@ -145,16 +146,16 @@ class data:
     # Down-Wash parameters
 
     # No flaps
-    eps0_flaps0 = 1.5 * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
-    deps_dalpha_flaps0 = 0.247      # Derivative of downwash with respect to alpha, no flaps conf
+    eps0_flaps0 = 1.5 * np.pi/180   # [rad] Downwash at 0 angle of attack in no flaps configuration
+    deps_dalpha_flaps0 = 0.247 # [rad/rad = °/° ] Derivative of downwash with respect to alpha, no flaps conf
 
     # 15° flaps
-    eps0_flaps15 = 2.411
-    deps_dalpha_flaps15 = 0.2387
+    eps0_flaps15 = 2.411 * np.pi/180  # [rad] Downwash at 0 angle of attack with 15° flaps configuration
+    deps_dalpha_flaps15 = 0.2387  # [rad/rad = °/° ] Derivative of downwash with respect to alpha, no flaps conf
 
     # 30° flaps
-    eps0_flaps30 = 3.05 * np.pi/180
-    deps_dalpha_flaps30 = 0.262
+    eps0_flaps30 = 3.05 * np.pi/180  # [rad] Downwash at 0 angle of attack with 30° flaps configuration
+    deps_dalpha_flaps30 = 0.262  # [rad/rad = °/° ] Derivative of downwash with respect to alpha, 30° flaps configuration
 
 
     # Airfoil characteristics
@@ -163,21 +164,21 @@ class data:
 
 
     # wing tilt angle, angle between reference line of fuselage and reference line of profile
-    alpha_i = 4 / 180 * np.pi
+    alpha_i = 4 / 180 * np.pi  # [rad]
 
 
     # airfoil zero lift angle: from zero lift line to reference line. Negative means that airfoil lifts with 0 local angle of attack measured to reference line
-    alpha_0 = -1.8/180*np.pi
+    alpha_0 = -1.8/180*np.pi  # [rad]
 
 
 
     # Input file name
-    Files = ['cldistribution', 'polar', 'flappolar', 'aileronpolar']  # best to replace the value
-    alphaVSP = 5/180*np.pi
-    PolarFlDeflDeg = 10   # Flap deflection for the naca3318fl+10 file used. File read in PattersonAugmented
-    PolarAilDeflDeg = 10  # Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
-    alpha_max = 15/180*np.pi
-    alpha_max_fl = 10/180*np.pi
+    Files = ['cldistribution', 'polar', 'flappolar', 'aileronpolar']
+    alphaVSP = 5/180*np.pi  # [rad] Angle of attack used during the analyses in STAB and FEM files in OpenVSP
+    PolarFlDeflDeg = 10   # [degree] Flap deflection for the naca3318fl+10 file used. File read in PattersonAugmented
+    PolarAilDeflDeg = 10  # [degree] Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
+    alpha_max = 15/180*np.pi  # [rad]
+    alpha_max_fl = 10/180*np.pi  # [rad]
 
 
 

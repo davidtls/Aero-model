@@ -239,15 +239,26 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
           * CL0w: (Wing + fus) lift at 0 angle of attack and 0 deflection of flaps in presence of slipstream.
 
-          * VarCLw_flaps: Variation of the (wing+fus) lift for the given deflection of flaps, at the given angle of
-                     attack, in presence of slipstream.
-                     It should be slightly above g.CL0_fl since the slipstream augments flaps efficiency.
-                     CL(alpha,flaps) - CL(alpha,flaps=0)
 
-          * VarCLw_alpha: variation of the (wing+fus) lift for the given angle of attack, at the given flap deflection,
-                     in presence of slipstream.
-                     CL_alpha_w (slope) is obtained dividing by the angle of attack.
-                     CL(alpha,flaps) - CL(alpha=0,flaps)
+    There are several important variables to calculate here:
+
+    alpha_w_0 : This is the alpha for which the lift of the wing is 0 when there are no flaps and no thrust (no slipstream).
+               Keep in mind this angle is not modified by having slipstream. Slipstream only modifies the slope of the curve,
+               but the all the different CL curves for different Ct start at this point (alpha_w_0,0). It is modified
+               if we deployed the flaps.
+
+    VarCLs0 :  This is the difference between
+            1) The wing lift at alpha_w_0  for the given flaps with slipstream (Ct =! 0)
+            2) The wing lift at alpha_w_0 withtout slipstream (Ct = 0). This is 0 if flaps retracted,
+               if flaps deployed this is exactly CL0_flaps
+
+    VarCLsalpha : This is the difference between:
+            1) The wing lift at the given alpha  for the given flaps with slipstream (Ct =! 0)
+            2) The wing lift at the given alpha for the given flaps withtout slipstream (Ct = 0).
+
+    To understand this well, see Fig:20 in "The effect of propeller slipstream on the static longitudinal stability and control
+    of multi-engined propeller aircraft"
+
 
     @david_planas
     """
@@ -273,26 +284,34 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     else:
         dail = 0
 
+
     # Slipstream velocity to free stream velocity
     VarVtoV = (1+Fx/(0.5*g.N_eng*rho*g.Sp*V**2))**0.5 - 1  # Very similar value than before with Patterson, is momentum theory ...
 
     # Contracted slipstream diameter
     D_s = g.Dp * ((V + 0.5 * V * VarVtoV)/(V + V * VarVtoV)) ** 0.5
 
-    # (Wing + fus) lift at 0 angle of attack and 0 deflection of flaps in presence of slipstream.
+    # (Wing + fus) lift at alpha = 0 and DeflFlaps = 0 in presence of slipstream.
     CL0w = PropWing.CalcCoef(Tc, V/a_sound, atmo, 0, dail, 0, g, beta, p, V, r)[0]
 
-    # VarCLw_flaps: Variation of the (wing+fus) lift for the given deflection of flaps, at the given angle of attack, in presence of slipstream.
-    VarCLw_flaps = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha * np.pi/180, dail, g.FlapDefl, g, beta, p, V, r)[0]) - (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha * np.pi/180, dail, 0, g, beta, p, V, r)[0])
+    # Calculus of Wing zero-lift angle of attack (Is the same with or without slipstream), no flaps
+    alpha_0_w = -(g.CL0-g.CL0_HT)/(CL_alpha_no_int - g.aht)  # [rad]
 
-    # VarCLw_alpha: variation of the (wing+fus) lift for the given angle of attack, at the given flap deflection, in presence of slipstream.
-    VarCLw_alpha = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha, dail, g.FlapDefl, g, beta, p, V, r)[0]) - (PropWing.CalcCoef(Tc, V/a_sound, atmo, 0, dail, g.FlapDefl, g, beta, p, V, r)[0])
+    # At alpha_w_0, for the wing, for the given FlapDefl, the difference of lift between the case with interaction and without it (Ct =!0 and Ct =0)
+    VarCLs0 = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha_0_w, dail, g.FlapDefl, g, beta, p, V, r)[0]) - ((CL_alpha_no_int - g.aht) * alpha_0_w + (g.CL0-g.CL0_HT) + g.CL0_fl)
+
+    # For the wing, for the given FlapDefl, for the given alpha, the difference of lift between the case with interaction and without it (Ct =!0 and Ct =0)
+    VarCLsalpha = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha, dail, g.FlapDefl, g, beta, p, V, r)[0])-((CL_alpha_no_int - g.aht) * alpha + (g.CL0-g.CL0_HT) + g.CL0_fl)
+
+    # CL at the given alpha and FlapDefl condition, with slipstream
+    CL = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha, dail, g.FlapDefl, g, beta, p, V, r)[0])
 
     # Computing Tail's lift coefficient and Tail's pitching moment
-    CL_tail, Cm_tail, eps = VerticalTail_Lift_and_moment(V, alpha, g, PropWing, VarCLw_alpha, CL_alpha_no_int, D_s, VarVtoV)
+    CL_tail, Cm_tail, eps = VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s, VarVtoV)
 
     # Computing tail-off pitching moment
-    Cm_tail_off = Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLw_flaps, VarCLw_alpha)
+    Cm_tail_off = Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLs0, VarCLsalpha)
+
 
     Cm = Cm_tail_off + Cm_tail
 
@@ -308,18 +327,31 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, VarCLw_alpha, CL_alpha_no_int, D_s, VarVtoV):
+def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s, VarVtoV):
 
     """
     Function to compute the tail lift and pitching moment. The function computes the slipstream and the dynamic pressure
     in the horizontal tail when there is a propeller in front of the wing, based on Obert's theory.
+
+    The normal downwash would be:
+    eps = g.eps0 + g.deps_dalpha * alpha
+
+    With slipstream it would be:
+
+    eps = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * 2.154349 = 0.11064817
     """
 
+
+
     # Epsilon without inflow effects
-    eps_noinflow = g.eps0 + (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * (VarCLw_alpha)
+    eps_noinflow = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * (CL)
 
     # K_epsilon calculus
-    g.K_e = -0.432*np.log(g.lh2/g.c) + 2.0027
+    if ((g.lh2/g.c) < 5):
+        g.K_e = -0.0085*(g.lh2/g.c)**3 + 0.1078*(g.lh2/g.c)**2 - 0.5579*(g.lh2/g.c) + 2.4546
+    else:
+        g.K_e = 1.3
+
 
     # H calculus :   Vertical Distance of Slipstream Center Line to Horizontal Tail
     h = g.z_h_w - g.lh*np.sin(alpha) - (g.x_offset + 0.25 * g.c)*np.sin(alpha) + g.lh2*np.sin(g.K_e * eps_noinflow) + g.FlChord * g.c * np.sin(g.FlapDefl) + 0.25 * (g.x_offset + 0.25 * g.c) * np.sin(PropWing.alpha0_fl * g.FlapDefl)
@@ -328,17 +360,18 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, VarCLw_alpha, CL_alpha_n
     # If you want radians, it is necessary to multiply by flaps deflection, in radians.
     # g.FlapDefl is in radians
 
-    if h < 1.25 * D_s and h > -0.5 * D_s:
-        var_eps = -0.2263 * (h/(0.5*D_s)) ** 6 + 1.0584 * (h/(0.5*D_s)) ** 5 - 0.2971 * (h/(0.5*D_s)) ** 4 - 3.56 * (h/(0.5*D_s)) ** 3 + 0.7938 * (h/(0.5*D_s)) ** 2 + 5.6374 * (h/(0.5*D_s)) + 0.0246  # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
+    if (h/(0.5*D_s))< 2.5 and (h/(0.5*D_s)) > -1:
+        var_eps = -0.2263 * (h/(0.5*D_s)) ** 6 + 1.0584 * (h/(0.5*D_s)) ** 5 - 0.2971 * (h/(0.5*D_s)) ** 4 - 3.56 * (h/(0.5*D_s)) ** 3 + 0.7938 * (h/(0.5*D_s)) ** 2 + 5.6374 * (h/(0.5*D_s)) + 0.0246
         extra_eps = (var_eps * VarVtoV) * np.pi / 180
         eps = eps_noinflow + extra_eps
-    elif h > 1.25 * D_s:
+    elif (h/(0.5*D_s)) > -2.5 and (h/(0.5*D_s)) < -1:
+        var_eps = y = -2.2973*(h/(0.5*D_s))**6 - 25.197*(h/(0.5*D_s))**5 - 111.87*(h/(0.5*D_s))**4 - 255.44*(h/(0.5*D_s))**3 - 314.31*(h/(0.5*D_s))**2 - 198.75*(h/(0.5*D_s)) - 53.729
+        extra_eps = (var_eps * VarVtoV) * np.pi / 180
+        eps = eps_noinflow + extra_eps
+    else:
         var_eps = 0
         eps = eps_noinflow
-    else:
-        var_eps = -3
-        extra_eps = (var_eps * VarVtoV) * np.pi / 180
-        eps = eps_noinflow + extra_eps
+
 
     # Dynamic pressure ratio in the horizontal tail
     V2 = (1 + VarVtoV) * V
@@ -356,11 +389,21 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, VarCLw_alpha, CL_alpha_n
     else:
         dpratio = 1
 
-    # TAIL MOMENT
-    Cm_tail = -(alpha + g.it - eps) * (g.aht2 * g.S/g.Sh) * dpratio * (g.Sh * g.lv)/(g.S * g.c)
 
-    # TAIL LIFT
-    CL_tail = g.aht2 * (alpha + g.it - eps) * dpratio
+    if (alpha + g.it - eps)< (12*np.pi/180):
+       # TAIL MOMENT
+       Cm_tail = -(alpha + g.it - eps) * (g.aht2 * g.S/g.Sh) * dpratio * (g.Sh * g.lv)/(g.S * g.c)
+       # TAIL LIFT
+       CL_tail = g.aht2 * (alpha + g.it - eps) * dpratio
+
+    else:
+    # TAIL MOMENT
+       Cm_tail = -(12*np.pi/180) * (g.aht2 * g.S/g.Sh) * dpratio * (g.Sh * g.lv)/(g.S * g.c)
+       CL_tail = g.aht2 * (12*np.pi/180) * dpratio
+
+    # Basically, applying more Ct creates higher downwash, this means that for high angles of attack, the detachment
+    # occurs later in the horizontal tail.
+
 
     return CL_tail, Cm_tail, eps
 
@@ -373,37 +416,79 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, VarCLw_alpha, CL_alpha_n
 
 
 
-def Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLw_flaps, VarCLw_alpha):
+def Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLs0, VarCLsalpha):
 
     """
     Function to compute the tail_off pitching moment. Based on Obert's theory.
     """
 
-    # TAIL-OFF PITCHING MOMENT
-    Cm_ct0 = g.Cm0_wo_HT + g.Cm0_fl + g.Cm_alpha_wb*alpha + np.dot(CoefMatrix[4, 1:8], x[1:8])
+    # Preparations
 
-    # Computes augmented chord when flaps are deflected, by Pithagoras
-    c_flaps = g.c * np.sqrt(((1-g.FlChord) + g.FlChord*np.cos(g.FlapDefl))**2 + (g.FlChord*np.sin(g.FlapDefl))**2)
+    if g.hangar['aircraft'] == 'X-57':
+        c_flaps = 0.7794  # Flap Fowler, calculated manueally for the 30° deflection
+    else:
+        # Computes augmented chord when flaps are deflected, by Pithagoras
+        c_flaps = g.c * np.sqrt(((1-g.FlChord) + g.FlChord*np.cos(g.FlapDefl))**2 + (g.FlChord*np.sin(g.FlapDefl))**2)
 
-    # 1st contribution
-    Cm_s_0 = g.N_eng * ((D_s * g.c)/g.S) * g.cm_0_s * ((1+VarVtoV) ** 2 - 1)
 
-    # 2nd contribution
-    Cm_s_df = (c_flaps/g.c)*(-0.25+0.32*g.FlChord / c_flaps) * (1+0.2*(1-np.sqrt(2) * np.sin(g.FlapDefl))) * VarCLw_flaps
+
+
+    # Tail-off clean pitching moment
+    Cm1 = g.Cm0_wo_HT + g.Cm0_fl + g.Cm_alpha_wb*alpha + np.dot(CoefMatrix[4, 1:8], x[1:8])
+
+
+    # 1st contribution. Moment due to augmented dynamic pressure on the profile
+    Cm2 = g.N_eng * ((D_s * g.c)/g.S) * g.cm_0_s * ((1+VarVtoV) ** 2 - 1)
+
+
+    # 2nd contribution. Change in pitching moment when deploying flaps
+    Cm3 = (c_flaps/g.c)*(-0.25+0.32* (g.FlChord*g.c / c_flaps)) * (1+0.2*(1-np.sqrt(2) * np.sin(g.FlapDefl))) * VarCLs0
+
+
+    Var_xac_fus = -0.25
+
+    # PAPER AIAA
 
     if g.FlapDefl == 0:
         F = 0
     elif g.FlapDefl <= 30*np.pi/180:
-        F = (0.5 * (g.FlapDefl*180/np.pi) / 30 + 0.25)*(c_flaps/g.c-1) + 0.05 * (g.FlapDefl*180/np.pi) / 30 + (g.Var_xac_fus / g.c) * (1-(g.FlapDefl*180/np.pi) / 30)
+        F = (0.5 * (g.FlapDefl*180/np.pi) / 30 + 0.25)*(c_flaps/g.c-1) + 0.05 * (g.FlapDefl*180/np.pi) / 30 + (Var_xac_fus / g.c) * (1-(g.FlapDefl*180/np.pi) / 30)
     else:
         F = -0.75 * (c_flaps/g.c-1) - 0.05
 
-    Cm_s_alpha = F * VarCLw_alpha
+    Cm4 = F * VarCLsalpha
 
+
+    # THESIS AND OBERT
+
+    Cm5 = -0.25*(c_flaps/g.c - 1)*VarCLsalpha
+
+    Cm6 = -(0.05 + 0.5*(c_flaps/g.c - 1))*VarCLsalpha
+
+
+    # To take the moments in the centre of gravity, not in the aerodynamic point
     # Passing pitching moment due to wing + fuselage lift from aerdynamic center (g.lemac + 0.25*g.c) tp center of gravity (g.x_cg)
-    Cm_tail_off = Cm_s_0 + Cm_s_df + Cm_s_alpha + Cm_ct0 - (CL0w + VarCLw_alpha + VarCLw_flaps)*(g.lemac + 0.25*g.c - g.x_cg)/g.c
+    # We just need to account for the extra wing lift due to slipstream!
+    Cm7 = - (VarCLsalpha)*(g.lemac + 0.25*g.c - g.x_cg)/g.c
 
-    return Cm_tail_off
+
+    # AIAA PAPER
+    Cm_tail_off1 = Cm1 +Cm2 + Cm3 + Cm4 + Cm7
+
+    # OBERT
+    Cm_tail_off2 = Cm1 +Cm2 + Cm3 + Cm5 + Cm6 + Cm7
+
+    # Differences are very small so we take Oberts method and we do not need to provide Var_xac_fus = -0.25
+
+
+    return Cm_tail_off2
+
+
+
+
+
+
+
 
 
 

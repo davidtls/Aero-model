@@ -463,10 +463,11 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     rho = atmo[1]
 
     # --- Now prepare variables for equations ---
-    V = 40.145
-    alpha = 0.0070674911658034625
-    de = -0.31381389162636214
-    dx = 0.9999996478122892
+    V = 70
+    alpha = 0.10580232050347024
+    de = -0.08785341123127563
+    dx = 0.3121325483658943
+
 
     beta = 0
     gamma = 0
@@ -584,15 +585,18 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     epsilon_matrix = np.zeros((len(dx_vector), len(alpha_vector)))
 
     for i in range(len(dx_vector)):
-        Fx_vec = g.Thrust(np.full(g.N_eng, i), V_vect, atmo)
+        Fx_vec = g.Thrust(np.full(g.N_eng, dx_vector[i]), V_vect, atmo)
         Tc[i, :] = Fx_vec/(2*rho*g.Sp*V**2)
 
         for j in range(len(alpha_vector)):
             sub_vect = np.array([alpha_vector[j], beta, p, q, r, da, de, dr])
-            CL_matrix[i, j] = -AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)[0] / (0.5*rho*V**2 * g.S)
-            CD_matrix[i, j] = -AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)[2] / (0.5*rho*V**2 * g.S)
-            Cm_matrix[i, j] = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)[4] / (0.5*rho*V**2 * g.S * g.c)
+            F = AeroForces.CalcForce_aeroframe_DEP(V, np.copy(CoefMatrix), np.copy(sub_vect), Tc[i, :], atmo, g, PropWing)
+            CL_matrix[i, j] = -F[2] / (0.5*rho*V**2 * g.S)
+            CD_matrix[i, j] = -F[0] / (0.5*rho*V**2 * g.S)
+            Cm_matrix[i, j] = F[4] / (0.5*rho*V**2 * g.S * g.c)
             epsilon_matrix[i, j] = AeroForces.Cm_and_CL_tail(V, CoefMatrix, sub_vect, Tc[i,:], atmo, g, PropWing)[2]
+
+
 
 
     fig1 = plt.figure()

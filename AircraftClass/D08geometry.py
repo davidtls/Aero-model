@@ -6,6 +6,8 @@ Geometry class for the D08
 @author: david.planas
 
 Conversion linear factor from an A320: 0.116935483
+
+I need the airfoil and the model in Openvsp3
 """
 import math
 import sys
@@ -15,36 +17,37 @@ import numpy as np
 
 
 class data:
-    # all data from A320 go here.
+    # all data from D08 go here.
     hangar = {}
     # shared data between class go here:
 
 
     # --- Mass ---
-    x_cg = 1.9566  # (m)
-    m = 142.711  # Kg (base 21.5T, MTOW : 23T, MLW : 22.35T    MZFW : 21T   MFL : 5T  MPL : 7.5T)
+    x_cg = 1.9566  # [m] (behind the tip)
+    m = 142.711  # [Kg]
 
 
     # --- Geometry ---
-    S =   # m^2
-    b = 3.9875      # m
-    c =   # m Mean aerodynamic chord from OpenVSP, used as reference, 2.303 according to ATR 72 flight manual.
-    lv =  - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
-    zf =  # z position of the MAC of the fin, in reality a suitable height
-    lemac =   # Distance from the tip to the leading edge of the MAC (here MAC matches with root chord)
-    fswept = /180*math.pi  # sweep angle of VT
-    ftaper =   # taper ratio of VT
-    fAR =  # aspect ratio of VT
-    FusWidth = 0.45531
-    bh = 1.46233  # in m the HT wingspan
-    Sh =   # Horizontal tail surface
-    Hor_tail_coef_vol = (Sh*lv) / (S*c)     # 1.02     Volume coefficient of Horizontal tail
-    it =  * np.pi/180                  # Horizontal tail tilt angle
-    taudr =   # ruder efficiency factor see nicolosi paper and dela-vecchia thesis
-    Var_xac_fus =     # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
+    S =   # [m^2] Wing surface
+    b = 3.9875  # [m] Wingspan
+    c =   # [m] Mean aerodynamic chord used as reference. It is not the root chord, but is the mean chord (simple narrowing wing). Center of gravity 19% - 34%
+    lv =  - x_cg  # [m] Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
+    zf =   # [m] z position of the MAC of the fin, or of the 25% chord, with respect to center of gravity, in reality a suitable height. Here is positive if tail is over the cg.
+    lemac =   # [m] Distance from the tip to the leading edge of the MAC (here MAC does not match with root chord, but is the chord whose chord = MAC, as is a simple narrowing wing) (3.104 from  aicraft's tip to leading edge of chord root) (chord of wing in root = 0.756m)
+    fswept = *math.pi  # sweep angle of VT
+    ftaper =   # Taper ratio of VT
+    fAR =   # Aspect ratio of VT
+    FusWidth = 0.45531  # [m] In the location of the wing. Anyway this is important for placing the engines with the algorithm, not really if you place them manually
+    bh = 1.46233  # [m] HT wingspan
+    Sh =   # [m^2] Horizontal tail surface
+    Hor_tail_coef_vol = (Sh*lv) / (S*c)  # Volume coefficient of Horizontal tail
+    it =  * np.pi/180  # [rad] Horizontal tail tilt angle.
+    taudr =   # Ruder efficiency factor see nicolosi paper and dela-vecchia thesis. "A comprehensive review of vertical tail design"
+    Var_xac_fus =    # [m] Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail).
+    # Fuselage moves forward the neutral point, so (Xnp(wing) - Xnp(wing+fuselage)) < 0
 
-    wingsweep = 25*np.pi/180  # radians
-    dihedral = 10.5*np.pi/180 #radians
+    wingsweep = 25*np.pi/180  # [rad] Sweep angle of the wing #27.45° I measure
+    dihedral = 10.5*np.pi/180  # [rad] Dihedral angle of the wing
 
 
     # flap and aileron definition
@@ -62,10 +65,10 @@ class data:
 
 
     # Inertia terms are obtained from VSPaero for an homogeneous weight distribution
-    Ix = 22.9245  # Kg/m^2
-    Iy = 102.3728  # Kg/m^2
-    Iz = 119.3115  # Kg/m^2
-    Ixz = 6.16     # Kg/m^2
+    Ix = 22.9245  # [Kg/m^2]
+    Iy = 102.3728  # [Kg/m^2]
+    Iz = 119.3115  # [Kg/m^2]
+    Ixz = 6.16     # [Kg/m^2]
 
 
     # --- Power ---
@@ -87,19 +90,13 @@ class data:
     z_h_w =   # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP
     lh =    # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
     lh2 =     # Horizontal distance from the wing trailing edge to the horizontal tail quarter chord point. Computed with OpenVSP
-    K_e =      # Down wash factor, see Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     c_ht =     # Average chord of the horizontal tail
-    var_eps =   # parameter for inflow in slisptream. See Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof
     cm_0_s =  # +  (0.2941)*Var_xac_fus/c  #zero lift pitching moment of the wing section at the propeller axis location. From the xlfr5 file, alpha = 0°
 
     # ---Unique coeff ---
     aht =         # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
     aht2 =        # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
     Cm_alpha_wb =  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail
-    # Cm_de = -8 # per rad, is constant for DECOL             You can use the one from STAB file, or this one
-    # Cm_alpha_fus =
-
-
 
 
 
@@ -119,14 +116,6 @@ class data:
     Cdb_fl_0 =
     Cdc_fl_0 =
 
-    # with flaps down 15°, coefficients and drag polar
-    Cd0_fl_15 =       # extra drag
-    CL0_fl_15 =       # extra lift
-    Cm0_fl_15 =      # extra moment
-
-    Cda_fl_15 =      # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 15 °
-    Cdb_fl_15 =
-    Cdc_fl_15 =
 
     # with flaps down 30°
     Cd0_fl_30 =     # extra lift
@@ -143,10 +132,6 @@ class data:
     # No flaps
     eps0_flaps0 =  * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
     deps_dalpha_flaps0 =       # Derivative of downwash with respect to alpha, no flaps conf
-
-    # 15° flaps
-    eps0_flaps15 =
-    deps_dalpha_flaps15 =
 
     # 30° flaps
     eps0_flaps30 = * np.pi/180
@@ -174,6 +159,21 @@ class data:
     PolarAilDeflDeg =   # Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
     alpha_max = /180*np.pi
     alpha_max_fl = /180*np.pi
+
+
+    path = 'D08/'
+   filenameNoFin = [path + 'Mach1.stab', path + 'Mach2.stab', path + 'Mach3.stab', path + 'Mach4.stab', path + 'Mach5.stab']
+
+
+    PropPath = "./D08/"
+    PropFilenames = {'fem': [PropPath+"Mach1",
+                         PropPath+"Mach2",
+                         PropPath+"Mach3",
+                         PropPath+"Mach4",
+                         PropPath+"Mach5"],
+                 'AirfoilPolar': PropPath+"Airfoil.txt",
+                 'FlapPolar': PropPath+"Airfoil-flap.txt",
+                 'AileronPolar': PropPath+"Airfoil-Aileron-10degree.txt"}
 
 
 
@@ -299,21 +299,16 @@ class data:
         self.inop = inop_eng  # number of inoperative engines
 
         self.PosiEng = np.array([-1.9938, -1.107, -0.66, 0.66, 1.107, 1.9938])
-        self.Dp = np.array([-0.3188, -0.4064, -0.4064, 0.4064, 0.4064, 0.3188])  # This must be a constant, not a vector! Otherwise code must be changeg
+        self.Dp = np.array([0.3188, 0.4064, 0.4064, 0.4064, 0.4064, 0.3188])  # This must be a constant, not a vector! Otherwise code must be changed
         self.Sp = self.Dp**2/4*math.pi
 
         self.xp = np.array([ , ,  , , , ])
-        self.yp = np.array([-148.38, -125.7, -103.02, -80.34, -57.66, -34.98])
+        self.yp = np.array([-1.9938, -1.107, -0.66, 0.66, 1.107, 1.9938])
         self.zp = np.array([ ,  ,  ,   ,   , ])  # vertical distance from center of gravity to propellers. Computed with OpenVSP
 
-        self.x_offset = 0.30508
+        self.x_offset = np.array([0.3107, 0.3166, 0.3166, 0.3166, 0.3166,0.3107 ])
 
         return
-
-
-
-
-
 
 
 
@@ -330,16 +325,6 @@ class data:
 
             self.eps0 = self.eps0_flaps0
             self.deps_dalpha = self.deps_dalpha_flaps0
-        elif FlapDefl == 15 * np.pi / 180:
-            self.Cd0_fl = self.Cd0_fl_15
-            self.CL0_fl = self.CL0_fl_15
-            self.Cm0_fl = self.Cm0_fl_15
-            self.Cda = self.Cda_fl_15
-            self.Cdb = self.Cdb_fl_15
-            self.Cdc = self.Cdc_fl_15
-
-            self.eps0 = self.eps0_flaps15
-            self.deps_dalpha = self.deps_dalpha_flaps15
         elif FlapDefl == 30 * np.pi / 180:
             self.Cd0_fl = self.Cd0_fl_30
             self.CL0_fl = self.CL0_fl_30
@@ -489,49 +474,68 @@ class data:
 
 
 
-    def DefaultProp(self, dx, V):
-        """
-        Need to account for the thrust of two different type of engines, inner and outer ones
-        """
+    def ThrustCalculus(self, dx, V,atmo):
+         # returns a vector
 
-        Thr = dx*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
+        # Some windmill is considered, for a very small range of J, after Thrust is made 0 artificially
+
+        # dx = [engine left wing, ..., engine right wing]
+        # V is a vector with size len(dx)
+
+        rho =atmo[1]
+        Thr = np.zeros(len(dx))
+
+        for i in range(len(dx)):
+
+             if i == 0 or i == 5:
+
+                 # OUTER ENGINES
+                 n = (5311.1*dx + 1442.8)/60 # [rps]
+                 J = V[i]/(n*self.Dp)
+
+                 if J <0.7125:
+                     Ct = 0.35149
+                     Thr[i] = Ct * (rho* (n)**2 * (self.Dp)**4)
+                 if J>2.4:
+                     Thr[i] = 0 # NO WINDMILLING CONSIDERED
+                 else:
+                     Ct = -0.1709*(J)**6 + 1.5416*(J)**5 - 5.4012*(J)**4 + 9.2325*(J)**3 - 8.1116*(J)**2 + 3.4855*(J) -0.2252
+                     Thr[i] = Ct * (rho* (n)**2 * (self.Dp)**4)
+
+             else:
+
+                # INNER ENGINES
+                n = (4723*dx + 638.48)/60 # [rps]
+                J = V[i]/(n*self.Dp)
+
+                if J <0.7125:
+                    Ct = 0.35
+                    Thr[i] = Ct * (rho* (n)**2 * (self.Dp)**4)
+
+                if J>2.403:
+                    Thr[i] = 0 # NO WINDMILLING CONSIDERED
+                else:
+                    Ct = 0.1476*(J)**6 - 1.4143*(J)**5 + 5.7064*(J)**4 - 12.352*(J)**3 + 14.717*(J)**2 - 8.9508*(J) + 2.4939
+                    Thr[i] = Ct * (rho* (n)**2 * (self.Dp)**4)
+
+
 
         return Thr
 
 
 
-    def DefaultTorque(self, dx, V):
-        '''
-        Change to your algorithm, more complete
-        '''
-        M_y = 0  # initialization
-        M_y = -np.dot(dx,self.PosiEng)
-        # for i in range(n_eng):
-        #     M_y=M_y+x[start+i]*g.step_y*(n_eng-i)
-        # for i in range(n_eng):
-        #     M_y=M_y-x[-i-1]*g.step_y*(n_eng-i)
-
-        M_y = M_y*2*self.P_var/(float(self.N_eng)*V)*self.prop_eff
-
-        return M_y
 
 
     def Thrust(self, dx, V, ):
 
         if self.Pkeyword == 'Default':
-            return self.DefaultProp(dx, V)
+            return self.ThrustCalculus(dx, V)
         else:
             print('WARNING, Pkeyword undefined in func "Thrust"')
             return None
 
 
-    def Torque(self, dx, V, theta_i=np.array([None])):
 
-        if self.Pkeyword == 'Default' or self.Pkeyword == 'DefaultPatterson':
-            return self.DefaultTorque(dx,V)
-        else:
-            print('WARNING, Pkeyword undefined in func "Torque"')
-            return None
 
 
     def DragModel(self, alpha, alpha_patter):

@@ -1,9 +1,10 @@
 """
 Created on Saturday, October 1st 2022
 
+Geometry class for the x57 Maxwell NASA
 
-PASOS:
-1) Flight situation definition
+
+1) Flight cases
 
 
 Flying condition explored:
@@ -21,24 +22,19 @@ First:
 
 
 Second:
-         Take-off with 30° deflection of flaps. 12 high lift propellers activated. Cruise propellers deactivated.
+         Take-off/ Landing procedure with 30° deflection of flaps. 12 high lift propellers activated. Cruise propellers deactivated.
          There is a required lift coefficient of 3.95 for the stall speed of 58 knots (29.8378)
 
-         The unblown maximum lift coefficient of the high-lift wing (with the 30° flap setting) is 2.439, that means
-         that activating the high lift propellers should give extra 1.5, in their paper is even better, its giving 1.7.
+         The unblown maximum lift coefficient of the high-lift wing (with the 30° flap setting) is 2.439, which means
+         that activating the high lift propellers should give the remaining  1.5. Results in the powered analysis publication
+         show HLP can give up to 1.7.
 
-3) Correr con o sin cola vertical? Vale VeDSC para este tipo de aviones o solo para aviones típicos regionales como
-el ATR-72
+3) Run the analysis with or without Vertical tail? Is VeDSC okay for this type of aircraft?
 
-4) Definir el flap, y las superficies de control, tanto en OpenVSP como en XFLR5
-
-
-5) Realizar la validación (te vale para la tesis y para algún paper (o el principio de algún paper),
-   puedes escribir alrededor de unas 20 páginas con ella). Eligiendo específicamente las figuras que quieras
-   normalmente Cl CD Cm vs alfa y Cy Cl Cn vs beta
+4) Define the flap and the control surfaces, in OpenVSP and XFLR5
 
 
-Geometry class for the x57 Maxwell NASA
+
 
 Specifications (from https://www.nasa.gov/sites/default/files/atoms/files/x-57-litho-print-v4.pdf)
 (based on Modification IV configuration)
@@ -95,15 +91,13 @@ sceptor_cdr_day_2_package
 
 
                The 4.9 kW condition corresponds to the expected power that the high-lift propeller requires according
-                to the airspeed mode schedule at the reference approach speed of 75 KEAS, Vref goal of the X-57
+               to the airspeed mode schedule at the reference approach speed of 75 KEAS, Vref goal of the X-57
 
 
 
 
 Evaluation of Off-Nominal Performance and Reliability of a
-Distributed Electric Propulsion Aircraft during Early Design
-
-               Pg 22
+Distributed Electric Propulsion Aircraft during Early Design, Pg 22
 
                2 x cruise motor 106.14 kg
                12 x cruise motor 81.65 kg
@@ -115,10 +109,6 @@ Distributed Electric Propulsion Aircraft during Early Design
                2 x pilot 170 kg
                Misc 135.7 kg
                Total 1360.77 kg
-
-
-
-
 
 
 
@@ -155,18 +145,7 @@ VALIDATION OF AERODYNAMIC FORCES AND MOMENTS WITH RANS, FOR X-57 MOD-III
                - sceptor_cdr_day_2_package
 
 
-
-
-
-
 @author: david.planas
-
-
-
-
-
-
-
 
 """
 import math
@@ -183,31 +162,32 @@ class data:
 
 
     # --- Mass ---
-    x_cg = 3.3560  # (m) (from the tip)
-    z_cg = 0.345948  # (m) (from the tip)
-    m = 1360.77  # Kg
+    x_cg = 3.3560  # [m] (behind the tip)
+    z_cg = 0.345948  # [m] (over the tip)
+    m = 1360.77  # [Kg]
 
 
     # --- Geometry ---
-    S = 6.196  # m^2
-    b = 9.642  # m
-    c = 0.6492451582  # m Mean aerodynamic chord used as reference. It is not the root chord, but is the mean chord (simple narrowing wing) Center of gravity 19% - 34%
-    lv = 7.9049172 - x_cg  # m Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
-    zf = 0.5628  # z position of the MAC of the fin, or of the 25% chord, with respect to center of gravity, in reality a suitable height.
-    lemac = 3.179  # Distance from the tip to the leading edge of the MAC (here MAC does not match with root chord, but is the chord whose chord = MAC, as is a simple narrowing wing) (3.104 M DE LA PUNTA AL INICIO DEL ALA) (chord of wing in root = 0.756m)
+    S = 6.196  # [m^2] Wing surface
+    b = 9.642  # [m] Wingspan
+    c = 0.6492451582  # [m] Mean aerodynamic chord used as reference. It is not the root chord, but is the mean chord (simple narrowing wing). Center of gravity 19% - 34%
+    lv = 7.9049172 - x_cg  # [m] Checked OpenVSP, distance from center of gravity to center of pressure of horizontal tail
+    zf = 0.5628  # [m] z position of the MAC of the fin, or of the 25% chord, with respect to center of gravity, in reality a suitable height. Here is positive if tail is over the cg.
+    lemac = 3.179  # [m] Distance from the tip to the leading edge of the MAC (here MAC does not match with root chord, but is the chord whose chord = MAC, as is a simple narrowing wing) (3.104 from  aicraft's tip to leading edge of chord root) (chord of wing in root = 0.756m)
     fswept = 49/180*math.pi  # sweep angle of VT
-    ftaper = 0.29  # taper ratio of VT
-    fAR = 1.34812  # aspect ratio of VT
-    FusWidth = 1.2192  # In the location of the wing. Anyway this is important for placing the engines with the algorithm, not really if you place them manually
-    bh = 3.1513  # in m the HT wingspan
-    Sh = 2.4527  # Horizontal tail surface
-    Hor_tail_coef_vol = (Sh*lv) / (S*c)     #      Volume coefficient of Horizontal tail
-    it = 0 * np.pi/180                  # Horizontal tail tilt angle
-    taudr = 0.5  # ruder efficiency factor see nicolosi paper and dela-vecchia thesis. A COMPREHENSIVE REVIEW OF VERTICAL TAIL DESIGN
-    Var_xac_fus = -0.2678456   # Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail)
+    ftaper = 0.29  # Taper ratio of VT
+    fAR = 1.34812  # Aspect ratio of VT
+    FusWidth = 1.2192  # [m] In the location of the wing. Anyway this is important for placing the engines with the algorithm, not really if you place them manually
+    bh = 3.1513  # [m] HT wingspan
+    Sh = 2.4527  # [m^2] Horizontal tail surface
+    Hor_tail_coef_vol = (Sh*lv) / (S*c)  # Volume coefficient of Horizontal tail
+    it = 0 * np.pi/180  # [rad] Horizontal tail tilt angle.
+    taudr = 0.5  # Ruder efficiency factor see nicolosi paper and dela-vecchia thesis. "A comprehensive review of vertical tail design"
+    Var_xac_fus = -0.2678456   # [m] Variation in the aerodynamic centre. Compute by difference of the neutral points on OpenVSP between wing and wing + fuselage (without hor tail).
+    # Fuselage moves forward the neutral point, so (Xnp(wing) - Xnp(wing+fuselage)) < 0
 
-    wingsweep = 1.887*np.pi/180  # radians
-    dihedral = 0*np.pi/180  # radians
+    wingsweep = 1.887*np.pi/180  # [rad] Sweep angle of the wing
+    dihedral = 0*np.pi/180  # [rad] Dihedral angle of the wing
 
 
     # flap and aileron definition
@@ -224,12 +204,12 @@ class data:
 
 
 
-    # Inertia terms are obtained from Flight dynamics and control assessment for differential thrust aircraft
-    # in engine inoperative conditions including aero‑propulsive effects
-    Ix = 1325  # Kg/m^2
-    Iy = 2161  # Kg/m^2
-    Iz = 3193  # Kg/m^2
-    Ixz = 0  # Kg/m^2
+    # Inertia terms are obtained from "Flight dynamics and control assessment for differential thrust aircraft
+    # in engine inoperative conditions including aero‑propulsive effects", TU DELFT, Maurice F.M. Hoogreef.
+    Ix = 1325  # [Kg/m^2]
+    Iy = 2161  # [Kg/m^2]
+    Iz = 3193  # [Kg/m^2]
+    Ixz = 0  # [Kg/m^2]
 
 
 
@@ -239,38 +219,23 @@ class data:
 
 
 
-    # --- Propeller-Wing activation ---
-
-
-
 
     # --- Distances ---
-    z_h_w = -0.4494  # vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. Positive if tail is over.
-    lh = 4.61  # Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
-    lh2 = 4.057     # Horizontal distance from the wing trailing edge to the horizontal tail leading edge. Computed with OpenVSP
-
-    c_ht = 0.7782   # Average chord of the horizontal tail
-
+    z_h_w = -0.4494  # [m] vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. Positive if tail is over.
+    lh = 4.61  # [m] Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
+    lh2 = 4.057  # [m] Horizontal distance from the wing trailing edge to the horizontal tail leading edge. Computed with OpenVSP
+    c_ht = 0.7782   # [m] Average chord of the horizontal tail
 
 
 
-
-
-
-
-
-
-    # YOU STILL HAVE TO CHANGE ALL THE VALUES BELOW HERE
-
-
-    cm_0_s = -0.205  # zero lift pitching moment of the wing section (airfoil) at the propeller axis location. From the xlfr5 file, alpha = 0°
+    cm_0_s = -0.1971  # zero lift pitching moment of the wing section (airfoil) at the propeller axis location. From the xlfr5 file, alpha = 0°
 
 
 
     # ---Unique coeff ---
-    aht = 1.4026      # Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S. In radians
-    aht2 = 1.5578     # Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S. In radians
-    Cm_alpha_wb = 0.0134 *180/np.pi  # Cm_alpha_wb from OpenVSP Aircraft without hor. tail. In radians
+    aht = 1.4026      # [1/rad] Horizontal effective tail lift coefficient. Effective means the influence of the rest of the aircraft is considered at 70m/s, alpha=0 (donwwash and tail dynamic pressure). Dimensioned with S.
+    aht2 = 1.5578     # [1/rad] Horizontal tail lift coefficient, for the tail analysed alone. Dimensioned with S.
+    Cm_alpha_wb = 0.0134 *180/np.pi  # [1/rad] Cm_alpha_wb from OpenVSP Aircraft without hor. tail.
 
 
     # alpha=0 coeff 77.67 m/s
@@ -285,33 +250,33 @@ class data:
 
 
     # Drag polar without patterson. Interpolated from VSP v26, updated VSPAERO
-    Cda_fl_0 = 1.2946            # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
-    Cdb_fl_0 = 0.2822            # alpha in radians!!
-    Cdc_fl_0 = 0.0468
+    Cda_fl_0 = 1.3393            # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
+    Cdb_fl_0 = 0.2845            # alpha in radians!!
+    Cdc_fl_0 = 0.0461
 
 
 
     # with flaps down 30°
-    Cd0_fl_30 =  0   # extra lift
-    CL0_fl_30 =   0  # extra drag
-    Cm0_fl_30 =    0# extra moment
+    Cd0_fl_30 = 0  # extra lift  #DEFINIR
+    CL0_fl_30 = 0  # extra drag  # DEFINIR
+    Cm0_fl_30 = 0  # extra moment  # DEFINIIR
 
-    Cda_fl_30 =  0          # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °
-    Cdb_fl_30 = 0           # alpha in radians!!
-    Cdc_fl_30 = 0
+    Cda_fl_30 = 0  # Coefficients for calculus of CD (CD=Cda * alpha ** 2 + Cdb * alpha + Cdc) for flaps = 30 °   # DEFINIR
+    Cdb_fl_30 = 0  # alpha in radians!!      # DEFINIR
+    Cdc_fl_30 = 0  # DEFINIR
 
 
     # Down-Wash parameters
 
     # No flaps
     eps0_flaps0 = 2.230251 * np.pi/180   # Downwash at 0 angle of attack in no flaps configuration
-    deps_dalpha_flaps0 = 0.1530       # Derivative of downwash with respect to alpha, no flaps conf
+    deps_dalpha_flaps0 = 0.1530          # Derivative of downwash with respect to alpha, no flaps conf
 
 
 
     # 30° flaps
-    eps0_flaps30 = 0* np.pi/180
-    deps_dalpha_flaps30 = 0
+    eps0_flaps30 = 2.230251 * np.pi/180    # DEFINIRLO  # [rad] Downwash at 0 angle of attack with 30° flaps configuration
+    deps_dalpha_flaps30 = 0.1530         # DEFINIRLO  # [rad/rad = °/° ] Derivative of downwash with respect to alpha, 30° flaps configuration
 
 
 
@@ -325,11 +290,11 @@ class data:
 
 
     # wing tilt angle, angle between reference line of fuselage and reference line of profile
-    alpha_i = 0 / 180 * np.pi
+    alpha_i = 0 / 180 * np.pi  # [rad]
 
 
     # airfoil zero lift angle: from zero lift line to reference line. Negative means that airfoil lifts with 0 local angle of attack measured to reference line
-    alpha_0 = -7.25/180*np.pi
+    alpha_0 = -7.25/180*np.pi  # [rad]
      # You have to calculate this with the angle of attack you want for the case of blowing in the X-57;
      # Here is calculated between 0 and 1 degree with the airfoil info. In the blowing normally gamma wont be zero and alpha we dont know
      # From FEM files, the values are between -10.5596 and -8.91 , calculated between 0 and 1, so you may have to change this.
@@ -338,9 +303,9 @@ class data:
 
     # Input file name
     Files = ['cldistribution', 'polar', 'flappolar', 'aileronpolar']  # best to replace the value
-    alphaVSP = 0/180*np.pi
-    PolarFlDeflDeg = 30   # Flap deflection for the naca3318fl+10 file used. File read in PattersonAugmented
-    PolarAilDeflDeg = 10  # Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
+    alphaVSP = 0/180*np.pi  # [rad] Angle of attack used during the analyses in STAB and FEM files in OpenVSP
+    PolarFlDeflDeg = 30   # [degree] Flap deflection for the naca3318fl+10 file used. File read in PattersonAugmented
+    PolarAilDeflDeg = 10  # [degree] Aileron deflection for the naca3318fl+10 file used. File read in PattersonAugmented
 
     path = 'X-57_STAB/'
     filenameNoFin = [path + 'Mach1.stab', path + 'Mach2.stab', path + 'Mach3.stab', path + 'Mach4.stab', path + 'Mach5.stab']
@@ -704,6 +669,10 @@ class data:
 
     def HLP_thrust(self, dx, V,atmo):
         # returns a vector
+
+        # J = (V)(nD) ;  V = freestream speed, n = revs/s, D=diameter
+        # Here Ct = T / (rho n^2 D^4)
+        # Thr = (rho n^2 D^4) * (f(J)) * dx
 
         J = V / ((4800/60) * self.Dp)
         Thr = (atmo[1] * ((4800/60))**2 * self.Dp**4) * (-0.1084*J**2 - 0.1336*J + 0.3934)*dx

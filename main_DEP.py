@@ -60,7 +60,7 @@ Things to check:
 
 
 
-aircraft = {'model': 'X-57'}   #OPTIONS: ATR, DECOL, X-57
+aircraft = {'model': 'ATR'}   #OPTIONS: ATR, DECOL, X-57
 
 
 

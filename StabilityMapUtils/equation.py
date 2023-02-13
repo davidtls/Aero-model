@@ -24,7 +24,6 @@ def Constraints_DEP(x, fix, CoefMatrix, atmo, g, PropWing):
         length of x except the propulsion levels is 8
         -fix = [V, beta, gamma, omega]
         fix is the vector of parameters whom are fixed by the user
-
     """
 
 
