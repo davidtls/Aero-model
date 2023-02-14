@@ -285,11 +285,20 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
         dail = 0
 
 
-    # Slipstream velocity to free stream velocity
-    VarVtoV = (1+Fx/(0.5*g.N_eng*rho*g.Sp*V**2))**0.5 - 1  # Very similar value than before with Patterson, is momentum theory ...
+    # Establish how many engines in the area of influence of horizontal tail (are within the horizontal tail wingspan)
+    engines = []
+    for i in range(len(g.yp)):
+        if abs(g.yp[i]) < (g.bh/2):
+            engines.append(i)
+    engines = np.array(engines)
 
-    # Contracted slipstream diameter
-    D_s = g.Dp * ((V + 0.5 * V * VarVtoV)/(V + V * VarVtoV)) ** 0.5
+
+    # Slipstream velocity to free stream velocity of each engine (vector)
+    VarVtoV = (1+Fx_vec/(0.5*rho*g.Sp*V**2))**0.5 - 1
+
+    # Contracted slipstream diameter of each engine (vector)
+    D_s = g.Dp * ((V + 0.5 * V * VarVtoV[i])/(V + V * VarVtoV)) ** 0.5
+
 
     # (Wing + fus) lift at alpha = 0 and DeflFlaps = 0 in presence of slipstream.
     CL0w = PropWing.CalcCoef(Tc, V/a_sound, atmo, 0, dail, 0, g, beta, p, V, r)[0]
@@ -307,7 +316,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     CL = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha, dail, g.FlapDefl, g, beta, p, V, r)[0])
 
     # Computing Tail's lift coefficient and Tail's pitching moment
-    CL_tail, Cm_tail, eps = VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s, VarVtoV)
+    CL_tail, Cm_tail, eps = VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s, VarVtoV, engines)
 
     # Computing tail-off pitching moment
     Cm_tail_off = Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLs0, VarCLsalpha)
@@ -327,7 +336,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
 
 
-def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s, VarVtoV):
+def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s, VarVtoV, engines):
 
     """
     Function to compute the tail lift and pitching moment. The function computes the slipstream and the dynamic pressure
@@ -343,6 +352,14 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
 
 
 
+    # We are just interested on contracted slipstream diameter and slipstream speed of the engines in the area of influence of HT
+    VarVtoV = np.mean(VarVtoV[engines[0]:engines[-1]])  # Not anymore a vector, but a float
+    D_s = np.mean(D_s[engines[0]:engines[-1]])  # Not anymore a vector, but a float
+
+
+
+
+
     # Epsilon without inflow effects
     eps_noinflow = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * (CL)
 
@@ -353,8 +370,9 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
         g.K_e = 1.3
 
 
+
     # H calculus :   Vertical Distance of Slipstream Center Line to Horizontal Tail
-    h = g.z_h_w - g.lh*np.sin(alpha) - (g.x_offset + 0.25 * g.c)*np.sin(alpha) + g.lh2*np.sin(g.K_e * eps_noinflow) + g.FlChord * g.c * np.sin(g.FlapDefl) + 0.25 * (g.x_offset + 0.25 * g.c) * np.sin(PropWing.alpha0_fl * g.FlapDefl)
+    h = g.z_h_w - g.lh*np.sin(alpha) - (g.x_offset[int(g.N_eng/2)] + 0.25 * g.c)*np.sin(alpha) + g.lh2*np.sin(g.K_e * eps_noinflow) + g.FlChord * g.c * np.sin(g.FlapDefl) + 0.25 * (g.x_offset[int(g.N_eng/2)] + 0.25 * g.c) * np.sin(PropWing.alpha0_fl * g.FlapDefl)
 
     # PropWing.alpha0_fl is the change of alpha_0 for unitary deflection of flap. In °/° = rad/rad
     # If you want radians, it is necessary to multiply by flaps deflection, in radians.
@@ -374,16 +392,9 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
 
 
     # Dynamic pressure ratio in the horizontal tail
-    V2 = (1 + VarVtoV) * V
-
     if (1 - (2*h / D_s)**2) > 0:
         bs = D_s * (1 - (2*h / D_s)**2) ** 0.5
-
-        if g.hangar['aircraft'] == 'X-57':
-            Sh_s = 2 * 2 * bs * g.c_ht   # Four engines within the tail wingspan
-        else:
-            Sh_s = 2 * bs * g.c_ht
-
+        Sh_s = len(engines) * bs * g.c_ht
         dpratio = ((Sh_s / g.Sh) * (1 + VarVtoV)**2 + (1-Sh_s/g.Sh))
 
     else:
@@ -438,11 +449,11 @@ def Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_i
 
 
     # 1st contribution. Moment due to augmented dynamic pressure on the profile
-    Cm2 = g.N_eng * ((D_s * g.c)/g.S) * g.cm_0_s * ((1+VarVtoV) ** 2 - 1)
-
+    Cm2 = ((D_s * g.c)/g.S) * g.cm_0_s * ((1+VarVtoV) ** 2 - 1)
+    Cm2 = sum(Cm2)
 
     # 2nd contribution. Change in pitching moment when deploying flaps
-    Cm3 = (c_flaps/g.c)*(-0.25+0.32* (g.FlChord*g.c / c_flaps)) * (1+0.2*(1-np.sqrt(2) * np.sin(g.FlapDefl))) * VarCLs0
+    Cm3 = (c_flaps/g.c)*(-0.25 + 0.32 * (g.FlChord*g.c / c_flaps)) * (1+0.2*(1-np.sqrt(2) * np.sin(g.FlapDefl))) * VarCLs0
 
 
     Var_xac_fus = -0.25

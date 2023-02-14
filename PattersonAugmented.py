@@ -245,23 +245,33 @@ class PropWing:
         Rratio = 0
         
         # Retrieve the local chord:
-        if self.NumFiles>1:
-            LocalChord = self.CLslope[: ,2, 0]
+        if self.NumFiles > 1:
+            LocalChord = self.CLslope[:, 2, 0]
         else:
             LocalChord = self.CLslope[:, 2]
         
-        beta=np.zeros(len(LocalChord))
+        beta = np.zeros(len(LocalChord))
+        x_offset = np.zeros(len(LocalChord))
+        Dp = np.zeros(len(LocalChord))
+
+
         for i in range(len(beta)):
-            Lratio = a.x_offset/LocalChord[i]                                                                           #x_offset is distance between propeller and leading edge
-            Rratio = a.Dp/(2*LocalChord[i])                                                                             #Dp is the diameter of the propeller
+
             if SectMu[i] != 0:
+                x_offset[i] = a.x_offset[int(SectMu[i])-1] #x_offset is distance between propeller and leading edge
+                Dp[i] = a.Dp[int(SectMu[i])-1]  #Dp is the diameter of the propeller
+                Lratio = x_offset[i]/LocalChord[i]
+                Rratio = Dp[i]/(2*LocalChord[i])
                 X = np.array([1, Lratio, Lratio**2, Lratio*Mu[int(SectMu[i])-1], Mu[int(SectMu[i])-1], Mu[int(SectMu[i])-1]**2])
             else:
+                Lratio = 0
+                Rratio = 0
                 X = np.array([1, Lratio, Lratio**2, Lratio*1, 1, 1**2])
             # Compute the whole thing
             beta[i] = np.dot(self.C0, X) + np.dot(self.C1, X)*Rratio + np.dot(self.C2, X)*Rratio**2 + np.dot(self.C3, X)*Rratio**3 + np.dot(self.C4, X)*Rratio**4
         
         return beta
+
 
 ## ------- Utility re-organize the lift in custom nnp data ------------
 
@@ -523,13 +533,13 @@ class PropWing:
         
         return
 
-    def PatterJames(self, Tc, Mach, atmospher, aoa, dail, dfl, plane,beta,p,V,r):
+    def PatterJames(self, Tc, Mach, atmospher, aoa, dail, dfl, plane, beta, p, V, r):
         '''
         This function computes the prop-wing interaction lift increase and friction drag due to blowing
         '''
         #get atmosphere info
-        rho=atmospher[1]
-        self.aoa = aoa #store locally for drag
+        rho = atmospher[1]
+        self.aoa = aoa  # store locally for drag
         
         #In this version of non-dim Augmented Patterson, Tc must be nn-dim: tc = T/(2*rho*Sp*V**2)
         """ The function could be modified here to take directly Tc as input
@@ -576,7 +586,7 @@ class PropWing:
                 #No Thrust, no need to solve the equation
                 myw[i] = 0
             else:
-                coef = [1, 2*np.cos(aoa-av_alpha_0+plane.alpha_i+plane.ip), 1, 0, - (T[i] / (2 * rho * plane.Sp * V_vect[i]**2)) ** 2]
+                coef = [1, 2*np.cos(aoa-av_alpha_0+plane.alpha_i+plane.ip), 1, 0, - (T[i] / (2 * rho * plane.Sp[i] * V_vect[i]**2)) ** 2]
                 roots = np.roots(coef)
                 #get the real positive root
                 for j in range(len(roots)):
@@ -685,7 +695,7 @@ class PropWing:
         for i in range(len(SectInProp)):
             # Check is sect has prop, flap, ailerons left or right
             for a in range(len(Tc)):
-                if NormCl[i,0] <= plane.yp[a]+plane.Dp/2 and NormCl[i,0] >= plane.yp[a]-plane.Dp/2:
+                if NormCl[i,0] <= plane.yp[a]+plane.Dp[a]/2 and NormCl[i,0] >= plane.yp[a]-plane.Dp[a]/2:
                     SectInProp[i] = int(a+1) # label engines from 1 to N_eng
             
             #Flap 1 negative y

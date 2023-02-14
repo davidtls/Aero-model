@@ -338,21 +338,20 @@ class data:
             """
 
             if TipClearance == True:                                                                                    #No engine in the tip
-
-                self.Dp = (self.b/2-self.FusWidth/2)/(N_eng/2+dfus+(N_eng/2-1)*dprop)                                   #calculates propeller diameter. There is one Dp whose blade
-            else:                                                                                                       #tip is just in the wing tip
+                self.Dp = np.full(self.N_eng, (self.b/2-self.FusWidth/2)/(N_eng/2+dfus+(N_eng/2-1)*dprop) )
+            else:                                                                                                       # tip is just in the wing tip
                 #Put one engine at wing tip
-                self.Dp = (self.b/2-self.FusWidth/2)/(N_eng/2+dfus-0.5+(N_eng/2-1)*dprop)                               #Bigger Dp than in previous case.
+                self.Dp = np.full(self.N_eng, self.b/2-self.FusWidth/2)/(N_eng/2+dfus-0.5+(N_eng/2-1)*dprop)            # Bigger Dp than in previous case.
 
             self.Sp = self.Dp**2/4*math.pi                                                                              #frontal surface propeller = pi*radio^2
-            self.x_offset = self.Dp/2             #Is the distance between propeller and leading edge
-            self.step_y = self.Dp+dprop*self.Dp
+            self.x_offset = np.full(N_eng, self.Dp/2)           #Is the distance between propeller and leading edge
+            self.step_y = self.Dp[0]+dprop*self.Dp[0]
 
 
             if TipClearance == True:
-                self.yp = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2, self.step_y)                       #creates vector
+                self.yp = np.arange(self.FusWidth/2+self.Dp[0]*(dfus+0.5), self.b/2, self.step_y)                       #creates vector
             else:                                                                                                       #np.arange([start, ]stop, [step, ])
-                self.yp = np.arange(self.FusWidth/2+self.Dp*(dfus+0.5), self.b/2+self.Dp/2, self.step_y)
+                self.yp = np.arange(self.FusWidth/2+self.Dp[0]*(dfus+0.5), self.b/2+self.Dp/2, self.step_y)
 
             self.yp = np.append(-self.yp, self.yp)
 
@@ -364,9 +363,10 @@ class data:
             #default ATR engine position
             self.step_y = 8.1/2.0
 
-            self.Dp = 3.96  # original ATR72 prop diameter
+            self.Dp = np.full(N_eng, 3.96)  # original ATR72 prop diameter
             self.Sp = self.Dp**2/4*math.pi
-            self.x_offset = self.Dp/2
+
+            self.x_offset = np.full(N_eng, self.Dp/2)
 
             self.xp = np.full(self.N_eng, self.x_offset + (self.x_cg - self.lemac))
             self.yp = np.array([-self.step_y, self.step_y])

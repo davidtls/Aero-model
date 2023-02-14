@@ -473,28 +473,28 @@ class data:
 
 
             self.PosiEng = np.array([-148.38, -125.7, -103.02, -80.34, -57.66, -34.98, 34.98, 57.66, 80.34, 103.02, 125.7, 148.38])*0.0254
-            self.Dp = 22.67 * 0.0254
+            self.Dp =np.full(self.N_eng,22.67 * 0.0254)
             self.Sp = self.Dp**2/4*math.pi
 
             self.xp = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.02547
             self.yp = np.array([-148.38, -125.7, -103.02, -80.34, -57.66, -34.98, 34.98, 57.66, 80.34, 103.02, 125.7, 148.38])*0.0254
             self.zp = np.full(self.N_eng, -0.454052)  # vertical distance from center of gravity to propellers. Computed with OpenVSP
 
-            self.x_offset = 10*0.0254
-            #self.offset = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.0254
+            #self.x_offset = 10*0.0254
+            self.offset = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.0254
 
         else:
 
 
             self.PosiEng = np.array([-189.74, 189.74])*0.0254
-            self.Dp = 60 * 0.0254
+            self.Dp = np.full(N_eng, 60 * 0.0254)
             self.Sp = self.Dp**2/4*math.pi
 
             self.xp = np.full(self.N_eng, 14.132*0.0254)  # Distance from the propeller to the tip of
             self.yp = np.array([-189.74, 189.74])*0.0254
             self.zp = np.full(self.N_eng, -0.5851)   # vertical distance from center of gravity to propellers. Computed with OpenVSP
 
-            self.x_offset = 0.3283
+            self.x_offset = np.full(N_eng, 0.3283)
 
 
         return
