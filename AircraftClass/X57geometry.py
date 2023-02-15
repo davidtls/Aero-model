@@ -213,13 +213,6 @@ class data:
 
 
 
-    ip = -7.25/180 *np.pi  # propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line.
-    # 0 is the angle of the propellers with respect to horizontal (0°angle of attack). There is, however, profile twisting and you would still have to account for
-    #the angle between the horizontal and the zero lift line of the propeller
-
-
-
-
     # --- Distances ---
     z_h_w = -0.4494  # [m] vertical distance from the horizontal tail to the propeller axis. Computed with OpenVSP. Positive if tail is over.
     lh = 4.61  # [m] Horizontal distance between the aerodynamic centers of horizontal tail and wing (0.25 of their chord in root is enough) Computed with OpenVSP.
@@ -483,6 +476,11 @@ class data:
             #self.x_offset = 10*0.0254
             self.offset = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.0254
 
+            self.ip = np.full(self.N_eng, -7.25/180 * np.pi)
+            # propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line.
+            # 0 is the angle of the propellers with respect to horizontal (0°angle of attack). There is, however, profile twisting and you would still have to account for
+            #the angle between the horizontal and the zero lift line of the propeller
+
         else:
 
 
@@ -495,6 +493,8 @@ class data:
             self.zp = np.full(self.N_eng, -0.5851)   # vertical distance from center of gravity to propellers. Computed with OpenVSP
 
             self.x_offset = np.full(N_eng, 0.3283)
+
+            self.ip = np.full(self.N_eng, -7.25/180 *np.pi)
 
 
         return

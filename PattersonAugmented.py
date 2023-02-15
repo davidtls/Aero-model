@@ -586,7 +586,7 @@ class PropWing:
                 #No Thrust, no need to solve the equation
                 myw[i] = 0
             else:
-                coef = [1, 2*np.cos(aoa-av_alpha_0+plane.alpha_i+plane.ip), 1, 0, - (T[i] / (2 * rho * plane.Sp[i] * V_vect[i]**2)) ** 2]
+                coef = [1, 2*np.cos(aoa-av_alpha_0+plane.alpha_i+plane.ip[i]), 1, 0, - (T[i] / (2 * rho * plane.Sp[i] * V_vect[i]**2)) ** 2]
                 roots = np.roots(coef)
                 #get the real positive root
                 for j in range(len(roots)):
@@ -736,22 +736,18 @@ class PropWing:
         for i in range(len(SectInProp)):
             if SectInProp[i] != 0:
                 #Take engine's number from 0
-                j=int(SectInProp[i]-1)
+                j = int(SectInProp[i]-1)
                 #Compute lift multiplier, aoa and local drag with flap
                 if SectHasFlap[i]:
-                    LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip+self.alpha0_fl * dfl)/(np.sin(alpha_fl_t[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
+                    LmFl[i] = (1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip[j]+self.alpha0_fl * dfl)/(np.sin(alpha_fl_t[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)**0.5-1
 
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
-                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
-                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) * V
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)-1)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_fl_t[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2) * V
 
                     #MODE1
-                    alpha_ep[i] = np.arctan((np.sin(alpha_fl_t[i]) - self.mu[j]*np.sin(plane.ip+self.alpha0_fl * dfl)) / (np.cos(alpha_fl_t[i])+self.mu[j]*np.cos(plane.ip)))
+                    alpha_ep[i] = np.arctan((np.sin(alpha_fl_t[i]) - self.mu[j]*np.sin(plane.ip[j]+self.alpha0_fl * dfl)) / (np.cos(alpha_fl_t[i])+self.mu[j]*np.cos(plane.ip[j])))
                     alpha_ep_drag[i] = alpha_ep[i]-alpha_fl_t[i] + p * NormCl[i, 0]/Velocity[i]
 
-                    #MODE2
-                    #alpha_ep_drag[i] = (alpha_fl_t[i] - self.mu[j]*(plane.ip+self.alpha0_fl * dfl)) /(1+self.mu[j])-alpha_fl_t[i] #+ self.AoAZero[i,-1]
-                    #alpha_ep[i] = np.arctan((alpha_fl_t[i] - self.mu[j]*(plane.ip+self.alpha0_fl * dfl)) /(1+self.mu[j]))
 
 
 
@@ -766,19 +762,16 @@ class PropWing:
                 
                 elif SectHasAilLeft[i]:
                     #Compute lift multiplier, aoa and local drag with aileron
-                    LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip+self.alpha0_ail * dail_l)/(np.sin(alpha_ail_t_l[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
+                    LmFl[i] = (1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip[j]+self.alpha0_ail * dail_l)/(np.sin(alpha_ail_t_l[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)**0.5-1
 
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
-                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
-                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) *V
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)-1)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_l[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2) *V
 
                     #MODE 1
-                    alpha_ep[i] = np.arctan((np.sin(alpha_ail_t_l[i]) - self.mu[j]*np.sin(plane.ip+self.alpha0_ail * dail_l)) /(np.cos(alpha_ail_t_l[i])+self.mu[j]*np.cos(plane.ip)))
+                    alpha_ep[i] = np.arctan((np.sin(alpha_ail_t_l[i]) - self.mu[j]*np.sin(plane.ip[j]+self.alpha0_ail * dail_l)) /(np.cos(alpha_ail_t_l[i])+self.mu[j]*np.cos(plane.ip[j])))
                     alpha_ep_drag[i] = alpha_ep[i]-alpha_ail_t_l[i] + p * NormCl[i, 0]/Velocity[i]
 
-                    #MODE2
-                    #alpha_ep_drag[i] = (alpha_ail_t_l[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_l)) /(1+self.mu[j])-alpha_ail_t_l[i] #+ self.AoAZero[i,-1]
-                    #alpha_ep[i] = np.arctan((alpha_ail_t_l[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_l)) /(1+self.mu[j]))
+
 
 
 
@@ -793,19 +786,16 @@ class PropWing:
                 
                 elif SectHasAilRight[i]:
                     #Compute lift multiplier, aoa and local drag with aileron
-                    LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip+self.alpha0_ail * dail_r)/(np.sin(alpha_ail_t_r[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
+                    LmFl[i] = ( 1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip[j]+self.alpha0_ail * dail_r)/(np.sin(alpha_ail_t_r[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)**0.5-1
 
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
-                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
-                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) *V
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)-1)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_ail_t_r[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2) *V
 
-                    #MODE1
-                    alpha_ep[i] = np.arctan((np.sin(alpha_ail_t_r[i]) - self.mu[j]*np.sin(plane.ip+self.alpha0_ail * dail_r)) /(np.cos(alpha_ail_t_r[i])+self.mu[j]*np.cos(plane.ip)))
+
+                    alpha_ep[i] = np.arctan((np.sin(alpha_ail_t_r[i]) - self.mu[j]*np.sin(plane.ip[j]+self.alpha0_ail * dail_r)) /(np.cos(alpha_ail_t_r[i])+self.mu[j]*np.cos(plane.ip[j])))
                     alpha_ep_drag[i] = alpha_ep[i]-alpha_ail_t_r[i] + p * NormCl[i, 0]/Velocity[i]
 
-                    #MODE2
-                    #alpha_ep[i] = np.arctan((alpha_ail_t_r[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_r)) /(1+self.mu[j]))
-                    #alpha_ep_drag[i] = (alpha_ail_t_r[i] - self.mu[j]*(plane.ip+self.alpha0_ail * dail_r)) /(1+self.mu[j])-alpha_ail_t_r[i] #+ self.AoAZero[i,-1]
+
 
 
 
@@ -820,20 +810,16 @@ class PropWing:
                 
                 else:
                     #Compute lift multiplier, aoa and local drag on clean wing
-                    LmFl[i] = (1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip)/(np.sin(alpha_t[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)**0.5-1
+                    LmFl[i] = (1 - BetaVec[i]*self.mu[j]*np.sin(plane.ip[j])/(np.sin(alpha_t[i]))) * (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)**0.5-1
 
-                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)-1)
-                    #self.Cd0_vec[i] = plane.Cd0_turbulent*(1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2)
-                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip) + (BetaVec[i]*self.mu[j])**2) *V
+                    self.Cd0_vec[i] = plane.Cd0_turbulent*((1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2)-1)
+                    self.LocalVelocity[i] = (1 + 2*self.mu[j]*BetaVec[i]*np.cos(alpha_t[i] + plane.ip[j]) + (BetaVec[i]*self.mu[j])**2) *V
 
 
-                    #MODE1
-                    alpha_ep[i] = np.arctan((np.sin(alpha_t[i]) - self.mu[j] * np.sin(plane.ip)) /(np.cos(alpha_t[i])+self.mu[j]*np.cos(plane.ip)))
+                    alpha_ep[i] = np.arctan((np.sin(alpha_t[i]) - self.mu[j] * np.sin(plane.ip[j])) /(np.cos(alpha_t[i])+self.mu[j]*np.cos(plane.ip[j])))
                     alpha_ep_drag[i] = alpha_ep[i]-alpha_t[i] + p * NormCl[i, 0]/Velocity[i]
 
-                    #MODE2
-                    #alpha_ep[i] = np.arctan((alpha_t[i] - (self.mu[j]) * plane.ip) /(1+self.mu[j]))
-                    #alpha_ep_drag[i] = (alpha_t[i] - self.mu[j] * plane.ip) /(1+self.mu[j])-alpha_t[i] #+ self.AoAZero[i,-1]
+
 
 
 
@@ -856,7 +842,7 @@ class PropWing:
                     if alpha_fl_t[i] < alpha_fl_t_max[i]:
                         LocalCl[i, -1] = LocalCl[i, -1] * alpha_fl_t[i]
                     else:
-                        LocalCl[i,-1] = LocalCl[i, -1] * np.sin(alpha_fl_t_max[i])*np.cos(alpha_fl_t[i])/np.cos(alpha_fl_t_max[i])
+                        LocalCl[i, -1] = LocalCl[i, -1] * np.sin(alpha_fl_t_max[i])*np.cos(alpha_fl_t[i])/np.cos(alpha_fl_t_max[i])
                         if alpha_fl_t[i] < self.alphaDrag[-1]:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(alpha_fl_t[i])
                         else:
@@ -898,7 +884,7 @@ class PropWing:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(self.alphaDrag[-1])+np.sin(alpha_t_max[i])*np.sin(alpha_t[i])/np.cos(alpha_t_max[i])
         
         BlownCl = np.copy(LocalCl)
-        BlownCl[:, -1] = LocalCl[:, -1]*(LmFl+1) * np.cos(-alpha_ep_drag) *self.DeltaCL_a_0
+        BlownCl[:, -1] = LocalCl[:, -1]*(LmFl+1) * np.cos(-alpha_ep_drag) * self.DeltaCL_a_0
         self.PWashDrag[:, 0] = BlownCl[:, -1] * np.sin(-alpha_ep_drag)
         self.LmFl = LmFl
         self.alpha_t_max = alpha_t_max

@@ -116,25 +116,23 @@ def Constraints_DEP(CoefMatrix, atmo, g, PropWing):
     #Matrix to transform a vector from body reference to aero reference
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
-    #Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
 
+    # Moment and Force of thrust  is obtained in body reference
+    Moment = np.zeros((g.N_eng, 3))
+    F_thrust_body = np.zeros((g.N_eng, 3))
+    for i in range(g.N_eng):
+        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip[i]), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip[i])])
+        Moment[i, :] = np.cross(a, b)
+        F_thrust_body[i,:] = b
+    Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
+    F_thrust_body = np.array((np.sum(F_thrust_body[:, 0]), np.sum(F_thrust_body[:, 1]), np.sum(F_thrust_body[:, 2])))
 
-
+    Mt = Thrust_moment_body
 
     # Thrust force is transformed from body to aero reference
     F_thrust_aero = Body2Aero_matrix @ F_thrust_body
 
-
-    # Moment of thrust is obtained in body reference
-    Moment = np.zeros((g.N_eng, 3))
-    for i in range(g.N_eng):
-        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
-        Moment[i, :] = np.cross(a, b)
-    Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
-
-    Mt = Thrust_moment_body
 
 
 
@@ -349,21 +347,22 @@ def Constraints_DEP_body(CoefMatrix, atmo, g, PropWing):
     #Matrix to transform a vector from body reference to aero reference
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
-    #Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip) , 0 , -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
 
-
-
-    # Moment of thrust is obtained in body reference
+    # Moment and Force of thrust  is obtained in body reference
     Moment = np.zeros((g.N_eng, 3))
+    F_thrust_body = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
         a = np.array([g.xp[i], g.yp[i], g.zp[i]])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip[i]), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip[i])])
         Moment[i, :] = np.cross(a, b)
+        F_thrust_body[i,:] = b
     Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
+    F_thrust_body = np.array((np.sum(F_thrust_body[:, 0]), np.sum(F_thrust_body[:, 1]), np.sum(F_thrust_body[:, 2])))
 
     Mt = Thrust_moment_body
 
+    # Thrust force is transformed from body to aero reference
+    F_thrust_aero = Body2Aero_matrix @ F_thrust_body
 
 
     # Transformation of aerodynamic forces from aero to body reference
@@ -525,21 +524,30 @@ def Long_equilibrium2(CoefMatrix, atmo, g, PropWing):
     # Matrix to transform a vector from body reference to aero reference
     Body2Aero_matrix = np.array([[np.cos(alpha)*np.cos(beta), np.sin(beta), np.sin(alpha)*np.cos(beta)], [-np.cos(alpha)*np.sin(beta), np.cos(beta), -np.sin(alpha)*np.sin(beta)], [-np.sin(alpha), 0, np.cos(alpha)]])
 
-    # Thrust force in body reference
-    F_thrust_body = [Fx*np.cos(g.alpha_i - g.alpha_0+g.ip), 0, -Fx*np.sin(g.alpha_i - g.alpha_0+g.ip)]
+
+
+
+
+
+    # Moment and Force of thrust  is obtained in body reference
+    Moment = np.zeros((g.N_eng, 3))
+    F_thrust_body = np.zeros((g.N_eng, 3))
+    for i in range(g.N_eng):
+        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip[i]), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip[i])])
+        Moment[i, :] = np.cross(a, b)
+        F_thrust_body[i,:] = b
+    Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
+    F_thrust_body = np.array((np.sum(F_thrust_body[:, 0]), np.sum(F_thrust_body[:, 1]), np.sum(F_thrust_body[:, 2])))
+
+    Mt = Thrust_moment_body
 
     # Thrust force is transformed from body to aero reference
     F_thrust_aero = Body2Aero_matrix @ F_thrust_body
 
-    # Moment of thrust is obtained in body reference
-    Moment = np.zeros((g.N_eng, 3))
-    for i in range(g.N_eng):
-        a = np.array([g.xp[i], g.yp[i], g.zp[i]])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip)])
-        Moment[i, :] = np.cross(a, b)
-    Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
 
-    Mt = Thrust_moment_body
+
+
 
     # Convert thrust in Tc for patterson
     Tc = Fx_vec/(2*rho*g.Sp*V**2)  # For turning dimensionless use V, V_vect has already been used for calculating FXi

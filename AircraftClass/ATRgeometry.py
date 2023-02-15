@@ -81,7 +81,6 @@ class data:
     P_var = P_a        # [w] power consumed by one engine in the original ATR 72 bi-engine
     hp = 0  # rotor term
     prop_eff = 0.8
-    ip = -1.6/180*np.pi  # [rad] propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line
     Pkeyword = 'Default'  # designate the propulsion model used to compute thrust
 
 
@@ -320,6 +319,7 @@ class data:
         self.N_eng = N_eng  # number of engines
         self.inop = inop_eng  # number of inoperative engines
         self.dprop = dprop  # spacing between propeller.
+        self.ip = np.full(self.N_eng, -1.6/180*np.pi)  # [rad] propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line
 
         if N_eng % 2 != 0:
             sys.exit("Number of engine is not even")
