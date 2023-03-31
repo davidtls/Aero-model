@@ -159,7 +159,8 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     DragQuad = F[0] + g.Cda*x[0]**2 + g.Cdb * x[0] + g.Cdc + (g.CD0T - g.Cdc_fl_0)    #  Last term for moving above the polar Cd0. (CD0T more accurate than Cdc_fl_0)
 
     if g.IsPropWing:
-
+        # Taking from Cl_beta, Cl_p, Cl_r the contribution of the wing, since effects from beta,p,r are re-calculated on wing's LIFT inside Patterson. Lift creates roll!
+        CoefMatrix[3, 1] = CoefMatrix[3, 1] - g.Matrix_no_tail_terms[3, 1]
         CoefMatrix[3, 2] = CoefMatrix[3, 2] - g.Matrix_no_tail_terms[3, 2]
         CoefMatrix[3, 4] = CoefMatrix[3, 4] - g.Matrix_no_tail_terms[3, 4]
         M = np.dot(CoefMatrix[3:6, :], x)
@@ -171,15 +172,22 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
             CLCl = PropWing.CalcCoef(Tc, V/a_sound, atmo, x[0], dail, g.FlapDefl, g, beta, p, V, r)
 
-            if len(CLCl)>2 and g.IsPropWingDrag:
+            Cd_Jam = Jamessondrag(V, CoefMatrix, x, Tc, atmo, g, PropWing, CLCl[0]+CL_tail)
+
+            if len(CLCl) > 2 and g.IsPropWingDrag:
                 # Drag is computed by patterson, add contribution of other variables (than alpha and dx)
-                Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]]) # add alpha=0 coefficients
+                Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]])  # add alpha=0 coefficients
                 Moment = M+np.array([CLCl[1], g.Cm0 + g.Cm0_fl, CLCl[4]])
+
+                if g.hangar['aircraft'] == 'X-57':
+                    Fbody[0] = -Cd_Jam - F[0] -CLCl[3] - CLCl[5]
 
             else:
                 Fbody = np.array([-DragQuad, F[1], -F[2]-CLCl[0]])  # add alpha=0 coefficients
                 # add roll effect
                 Moment = M+np.array([CLCl[1], g.Cm0 + g.Cm0_fl, CLCl[4]])
+
+
 
         else:
             CLCl = PropWing.CalcCoef(Tc, V/a_sound, atmo, x[0], dail, 0, g, beta, p, V, r)
@@ -187,6 +195,9 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
             Fbody = np.array([-F[0]-CLCl[2]-CLCl[3]-CLCl[5]-g.CD0T, F[1], -F[2]-CLCl[0]])  # add alpha=0 coefficients
             # add roll effect
             Moment = M+np.array([CLCl[1], g.Cm0, CLCl[4]])
+            Cd_Jam = Jamessondrag(V, CoefMatrix, x, Tc, atmo, g, PropWing, CLCl[0]+CL_tail)
+            if g.hangar['aircraft'] == 'X-57':
+                Fbody[0] = -Cd_Jam - F[0] - CLCl[3] - CLCl[5]
     else:
 
         if V <= g.VelFlap or g.FlapDefl != 0:
@@ -223,8 +234,8 @@ def CalcForce_aeroframe_DEP(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     """
-    Function for computing the total pitching moment and the horizontal tail's lift while taking into account the
-    effects of the slipstream. This is based in Obert's theory, based on a correlation of wind tunnel data.
+    Function for computing the total pitch moment and the horizontal tail's lift while taking into account the
+    effects of the slipstream. Based on Obert's theory, a correlation of wind tunnel data.
     More can be found in:
              Modeling the Propeller Slipstream Effect on Lift and Pitching Moment, Bouquet, Thijs; Vos, Roelof; DOI 10.2514/6.2017-0236
 
@@ -239,25 +250,22 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
           * CL0w: (Wing + fus) lift at 0 angle of attack and 0 deflection of flaps in presence of slipstream.
 
+          * alpha_w_0 : This is the alpha for which the lift of the wing is 0 when there are no flaps and no thrust (no slipstream).
+                     Keep in mind this angle is not modified by having slipstream. Slipstream only modifies the slope of the curve,
+                     but the all the different CL curves for different Ct start at this point (alpha_w_0,0). It is modified
+                     if we deployed the flaps.
 
-    There are several important variables to calculate here:
+          * VarCLs0 :  This is the difference between
+                  1) The wing lift at alpha_w_0  for the given flaps with slipstream (Ct =! 0)
+                  2) The wing lift at alpha_w_0 withtout slipstream (Ct = 0). This is 0 if flaps retracted,
+                     if flaps deployed this is exactly CL0_flaps
 
-    alpha_w_0 : This is the alpha for which the lift of the wing is 0 when there are no flaps and no thrust (no slipstream).
-               Keep in mind this angle is not modified by having slipstream. Slipstream only modifies the slope of the curve,
-               but the all the different CL curves for different Ct start at this point (alpha_w_0,0). It is modified
-               if we deployed the flaps.
+          * VarCLsalpha : This is the difference between:
+                  1) The wing lift at the given alpha  for the given flaps with slipstream (Ct =! 0)
+                  2) The wing lift at the given alpha for the given flaps withtout slipstream (Ct = 0).
 
-    VarCLs0 :  This is the difference between
-            1) The wing lift at alpha_w_0  for the given flaps with slipstream (Ct =! 0)
-            2) The wing lift at alpha_w_0 withtout slipstream (Ct = 0). This is 0 if flaps retracted,
-               if flaps deployed this is exactly CL0_flaps
-
-    VarCLsalpha : This is the difference between:
-            1) The wing lift at the given alpha  for the given flaps with slipstream (Ct =! 0)
-            2) The wing lift at the given alpha for the given flaps withtout slipstream (Ct = 0).
-
-    To understand this well, see Fig:20 in "The effect of propeller slipstream on the static longitudinal stability and control
-    of multi-engined propeller aircraft"
+    To extend, see Fig:20 in "The effect of propeller slipstream on the static longitudinal stability and control
+    of multi-engined propeller aircraft" Ed. Obert
 
 
     @david_planas
@@ -266,9 +274,9 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     rho = atmo[1]
     a_sound = atmo[0]
     beta = x[1]
-    p = x[2]
-    q = x[3]
-    r = x[4]
+    p = x[2]/(g.b/(2*V))
+    q = x[3]/(g.c/(2*V))
+    r = x[4]/(g.b/(2*V))
     alpha = x[0]
     CL_alpha_no_int = CoefMatrix[2, 0]
     da = x[5]
@@ -297,7 +305,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     VarVtoV = (1+Fx_vec/(0.5*rho*g.Sp*V**2))**0.5 - 1
 
     # Contracted slipstream diameter of each engine (vector)
-    D_s = g.Dp * ((V + 0.5 * V * VarVtoV[i])/(V + V * VarVtoV)) ** 0.5
+    D_s = g.Dp * ((V + 0.5 * V * VarVtoV)/(V + V * VarVtoV)) ** 0.5
 
 
     # (Wing + fus) lift at alpha = 0 and DeflFlaps = 0 in presence of slipstream.
@@ -312,7 +320,7 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
     # For the wing, for the given FlapDefl, for the given alpha, the difference of lift between the case with interaction and without it (Ct =!0 and Ct =0)
     VarCLsalpha = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha, dail, g.FlapDefl, g, beta, p, V, r)[0])-((CL_alpha_no_int - g.aht) * alpha + (g.CL0-g.CL0_HT) + g.CL0_fl)
 
-    # CL at the given alpha and FlapDefl condition, with slipstream
+    # CL wing at the given alpha and FlapDefl condition, with slipstream
     CL = (PropWing.CalcCoef(Tc, V/a_sound, atmo, alpha, dail, g.FlapDefl, g, beta, p, V, r)[0])
 
     # Computing Tail's lift coefficient and Tail's pitching moment
@@ -320,7 +328,6 @@ def Cm_and_CL_tail(V, CoefMatrix, x, Tc, atmo, g, PropWing):
 
     # Computing tail-off pitching moment
     Cm_tail_off = Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLs0, VarCLsalpha)
-
 
     Cm = Cm_tail_off + Cm_tail
 
@@ -340,14 +347,14 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
 
     """
     Function to compute the tail lift and pitching moment. The function computes the slipstream and the dynamic pressure
-    in the horizontal tail when there is a propeller in front of the wing, based on Obert's theory.
+    in the horizontal tail when there is a propeller in front of the wing.
 
     The normal downwash would be:
     eps = g.eps0 + g.deps_dalpha * alpha
 
     With slipstream it would be:
 
-    eps = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * 2.154349 = 0.11064817
+    eps = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * CL
     """
 
 
@@ -357,11 +364,12 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
     D_s = np.mean(D_s[engines[0]:engines[-1]])  # Not anymore a vector, but a float
 
 
+    if g.hangar['aircraft'] == 'X-57':
+       eps_noinflow = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * (CL) + 0.88*np.pi/180 # For taking into account downwash at zero lift. Maybe equation eps0 + deps/dalpha*alpha was more precise
 
-
-
-    # Epsilon without inflow effects
-    eps_noinflow = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * (CL)
+    else:
+       # Epsilon without inflow effects
+       eps_noinflow = (g.deps_dalpha / (CL_alpha_no_int-g.aht)) * (CL)
 
     # K_epsilon calculus
     if ((g.lh2/g.c) < 5):
@@ -401,16 +409,38 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
         dpratio = 1
 
 
-    if (alpha + g.it - eps)< (12*np.pi/180):
-       # TAIL MOMENT
-       Cm_tail = -(alpha + g.it - eps) * (g.aht2 * g.S/g.Sh) * dpratio * (g.Sh * g.lv)/(g.S * g.c)
-       # TAIL LIFT
-       CL_tail = g.aht2 * (alpha + g.it - eps) * dpratio
+
+    if g.hangar['aircraft'] == 'X-57':
+
+        if (alpha + g.it - eps) < (16*np.pi/180):
+            # TAIL LIFT
+            CL_tail = g.aht2 * (alpha + g.it - eps) * dpratio
+            # TAIL MOMENT
+            Cm_tail = -CL_tail * (g.lv)/(g.c)
+
+
+        elif (alpha + g.it - eps)>= (16*np.pi/180) and (alpha + g.it - eps)<(18*np.pi/180):
+            # TAIL LIFT
+            CL_tail = g.aht2 * (15*np.pi/180) * dpratio
+            # TAIL MOMENT
+            Cm_tail = -CL_tail * (g.lv)/(g.c)
+
+        else:
+            # TAIL LIFT
+            CL_tail = g.aht2 * dpratio * (2*(16*np.pi/180) - (alpha + g.it - eps))
+            # TAIL MOMENT
+            Cm_tail = -CL_tail * (g.lv)/(g.c)
+
 
     else:
-    # TAIL MOMENT
-       Cm_tail = -(12*np.pi/180) * (g.aht2 * g.S/g.Sh) * dpratio * (g.Sh * g.lv)/(g.S * g.c)
-       CL_tail = g.aht2 * (12*np.pi/180) * dpratio
+        # TAIL LIFT
+        CL_tail = g.aht2 * (alpha + g.it - eps) * dpratio
+        # TAIL MOMENT
+        Cm_tail = -CL_tail * (g.lv)/(g.c)
+
+
+
+
 
     # Basically, applying more Ct creates higher downwash, this means that for high angles of attack, the detachment
     # occurs later in the horizontal tail.
@@ -430,13 +460,13 @@ def VerticalTail_Lift_and_moment(V, alpha, g, PropWing, CL, CL_alpha_no_int, D_s
 def Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_int, CL0w, D_s, VarVtoV, CL_tail, VarCLs0, VarCLsalpha):
 
     """
-    Function to compute the tail_off pitching moment. Based on Obert's theory.
+    Function to compute the tail-off pitching moment.
     """
 
     # Preparations
 
     if g.hangar['aircraft'] == 'X-57':
-        c_flaps = 0.7794  # Flap Fowler, calculated manueally for the 30° deflection
+        c_flaps = 0.7794  # Flap Fowler, calculated manually for the 30° deflection
     else:
         # Computes augmented chord when flaps are deflected, by Pithagoras
         c_flaps = g.c * np.sqrt(((1-g.FlChord) + g.FlChord*np.cos(g.FlapDefl))**2 + (g.FlChord*np.sin(g.FlapDefl))**2)
@@ -500,6 +530,34 @@ def Tail_off_Pitching_Moment(x, CoefMatrix, V, alpha, g, PropWing, CL_alpha_no_i
 
 
 
+def Jamessondrag(V, CoefMatrix, x, Tc, atmo, g, PropWing, CL):
+    """
+    For computing drag in all kind of cases, wether there are flaps and/or blowing into the wing.
+    Inputs: (V, CoefMatrix, x, Tc, atmo, g, PropWing, CL)
+    """
 
+    rho = atmo[1]
+    Fx_vec = Tc * (2*rho*g.Sp*V**2)
+    Fx = np.sum(Fx_vec)
+
+    # Slipstream velocity to free stream velocity of each engine (vector)
+    VarVtoV = (1+Fx_vec/(0.5*rho*g.Sp*V**2))**0.5 - 1
+
+    # Contracted slipstream diameter of each engine (vector)
+    D_s = g.Dp * ((V + 0.5 * V * VarVtoV)/(V + V * VarVtoV)) ** 0.5
+
+    VarVtoV_av = (sum(D_s*VarVtoV) / (sum(D_s)))
+    mu = V/(V + VarVtoV_av*V)
+
+    ARmu = (g.b**2/g.S) * (1+g.N_eng*mu**2)/(g.N_eng + mu**2)
+
+    k = (mu**2) / (np.pi*0.8*ARmu)
+
+    CD0 = 0.0537249 + (0.0782 - 0.0537249)*(g.FlapDefl)/(30*np.pi/180)
+
+
+    CD = CD0 + k*CL**2
+
+    return CD
 
 

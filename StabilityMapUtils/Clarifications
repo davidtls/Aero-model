@@ -1,0 +1,89 @@
+A ver, o escribimos en español:
+
+Queremos revisar: que ocurre con beta, p, q, r, da, dr en AeroForces
+
+     *   p, q ,r se adimensionalizan en linea 132, 133, 134 multiplicando por g.b/(2*V), g.c/(2*V) y g.b/(2*V)
+
+     *   beta, de, dr se hacen absolutos en línea 148 y 149   xsym[1] = abs(xsym[1]), xsym[5] = abs(xsym[5])
+
+Lo primero se hace porque los coeficientes de CoefMatrix para [p,q,r] están para velocidades angulares adimensionales,
+y por tanto para volver a obtener las fuerzas es necesario multiplicar por velocidades angulares adimensionales.
+
+Lo segundo se hace porque los coeficientes de CoefMatrix SOLO para RESISTENCIA Y SUSTENTACION de beta,da,dr son iguales
+sea el que sea el signo de dr o de beta. Es decir una deflexion positiva o negativo de dr, da, o beta aumentan la
+resistencia y disminuyen la sustentacion por igual.
+
+
+El poblema es que:
+
+    * El vector con p,q,r adimensionales se llama: x
+    * El vector con p,r,r adimensionales y beta,dr,da en valor absoluto se llama: xsym
+
+
+TO REVISE:
+
+    * x should multiply to get lateral force and moments: F[1], M[0:2]:    CORRECT!
+
+    * xsym should multiply CoefMatrix to get lift and drag: F[0], F[2]: CORRECT!
+
+    * Be careful what you give to Obert
+         To Obert we give x, therefore be careful because he is taking p,q,r adimensionalysed... CORRECTED!
+         Dimensional p,q,r are recalculated for inner calculates.
+
+
+    * You need to revise lateral coefficients with derivatives p, r, beta. Results compared with RANS have some differences;
+
+                     For lateral results:
+                     4) Lateral results are not good because derivatives related with fuselage are not very well
+                            ROMAIN did the following:
+                                           1) Run FUSELAJE + WING + HT + VT
+                                           2) Run JUST FUSELAJE + WING
+                                           3) Run JUST HT + VT
+
+                        No good results anyways. You have everything explained in an excel called: Lateral investigation
+
+    * Drag:
+
+        Drag in the model has several componentes:
+                CDOT =  0.0537249  (cte, comes from OpenVSP, this is fine, equal to the one they get)
+
+                Cdi : Honestly is good, the problem is that for 0 angle of attack the drag is overestimated,
+                like if it was counting the Cd0 already.
+
+                tempCd0
+
+                tempCdWash: Honestly retiring this component does not solve the problem. This is helping to get the some
+                            "slope" that they get, by taking it off the slope problem grows. What you have to see is why you are
+                            overstimating drag so much at low angle of attack.
+
+
+
+        Try to take out some Cd by limitating the downwash angle but without changing the slope.
+        Do this the weekend.
+
+
+        Three approaches:
+
+         1) best approach honestly is trying to take into account the augmented speed, it goes multiplying in the induced
+            speed but it goes dividing in the Cdi so maybe you can do something there. DIDNT WORK
+
+         2) Tesis Patterson Pg 163, 164
+
+         3) Jameson, A., \Preliminary Investigation of the Lift of a Wing in an Elliptic
+             Slipstream," Aerodynamics Report 393-68-6, Grumman, 1968.
+
+
+         4) https://www.youtube.com/watch?v=zmz2gV3HHpU&ab_channel=BYUFLOWLab   treffz plane
+         5) https://www.youtube.com/watch?v=sb9Jy9-rx6c&ab_channel=BYUFLOWLab lifting line theory
+         6) VLM https://www.youtube.com/watch?v=UDVJsC8veqc&ab_channel=BYUFLOWLab
+
+         Para coger la coordenada z en patterson linea 147
+         self.CLslope[:, :, i], self.AoAZero[:, :, i], self.M_vec[i] = Read.ReadSectionCLslope(Files['fem'][i])
+
+         * Trefftz didnt work. Same problem than LLT, lift distribution is not realistic, in Trefftz you are
+         not calculating derivatives but you calculate difference of circulations so at the end is the same. Best
+         option is gonna be Patterson or Jameson with a simple model: Cd0 + kCL^2
+
+
+         * I would like to give a final chance to a model that uses a lot of derivatives back and forward, so
+         that everything is smoother and more realistic.

@@ -35,7 +35,7 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
     """
 
     MaxIter = 1000
-    tolerance = 1e-10
+    tolerance = 1e-8
 
     alpha = vars[0]
     gamma = vars[1]
@@ -48,8 +48,8 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
 
 
     Variables = {'alpha': alpha, 'theta': theta, 'de': de, 'dx': dx , 'V': V, 'gamma': gamma }
-    Bounds = {'alpha': (-5*math.pi/180, 20*math.pi/180), 'theta': (-30/180*math.pi, 30/180*math.pi), 'de': (-23/180*math.pi, 13/180*math.pi), 'dx': (1e-9, 1), 'V': (0, 70), 'gamma': (-30/180*math.pi, 30/180*math.pi)}
-    Initial_guess = {'alpha': 0.10615368859616711, 'theta': 0.10615368859618061, 'de': -0.0924842169820762, 'dx': 0.3122270558364951, 'V': 70, 'gamma': 0}
+    Bounds = {'alpha': (-5*math.pi/180, 20*math.pi/180), 'theta': (-10/180*math.pi, 25/180*math.pi), 'de': (-100/180*math.pi, 13/180*math.pi), 'dx': (1e-9, 1), 'V': (20, 100), 'gamma': (-30/180*math.pi, 30/180*math.pi)}
+    Initial_guess = {'alpha': 0.2561, 'theta': 0.2561, 'de': -0.401, 'dx': 0.56, 'V': 20, 'gamma': 0}
 
     x0 = []
     fixtest = []
@@ -66,7 +66,7 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
                fixtestorder.append(key)
 
         else:
-                x0.append(Initial_guess[key]) # Value has not been fixed so it has to be solved in x
+                x0.append(Initial_guess[key])  # Value has not been fixed so it has to be solved in x
                 xorder.append(key)
                 bnds1.append(Bounds[key][0])
                 bnds2.append(Bounds[key][1])
@@ -87,7 +87,7 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
         bnds = (bnds1, bnds2)
         # V = 70 , gamma = 0
         # xo = alpha = 0.10615368859616711 theta = 0.10615368859618061 , dx = 0.3122270558364951 , de = -0.0924842169820762
-        k = least_squares(Order, x0, args=diccons, bounds=bnds, max_nfev=2000, ftol=1e-8, xtol=1e-8)
+        k = least_squares(Order, x0, args=diccons, bounds=bnds, max_nfev=2000, ftol=1e-15, xtol=1e-15)
 
     elif len(x0) >= 5:  # Solving optimization problem. An objective function shall be given.
 
@@ -110,7 +110,7 @@ def Long_Equilibrium(Coef_base, atmospher, g, PW, vars) :
         sys.exit()
 
     # check if constraints are validated
-    #constraints_calc = Order(k.x, *diccons)
+    constraints_calc = Order(k.x, *diccons)
     #print("\nConstraints")
 
     # Retrieves from k.x and fixtest the values V, alpha, de, dx, theta, gamma
@@ -293,8 +293,7 @@ def V_min(a, b, xorder, fixtestorder,CoefMatrix, atmo, g, PropWing):
 
     f = ((9.81*g.m - F_thrust_body[0]*np.sin(alpha) - F_thrust_body[2]*np.cos(alpha))/(np.abs(F[2])/V**2))**0.5
 
-    # f = ((9.81*g.m - Fx * np.sin(g.alpha_i + g.alpha_0+g.ip + alpha))/(np.abs(F[2])/V**2))**0.5 i did ICAS with this, I think sign of alpha_0 is wrong
-
+    #f = ((9.81*g.m - Fx * np.sin(g.alpha_i - g.alpha_0+g.ip[0] + alpha))/(np.abs(F[2])/V**2))**0.5 Excatly the same as the other one, but here you need to give ip[0], in the other one different ip are allowed
     return f
 
 
@@ -315,6 +314,7 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
 
         4 equations (2 forces, 1 moment, theta = alpha + gamma)
     """
+    print(x, 'V, alpha, theta, de, dx ,gamma')
 
 
     rho = atmo[1]
@@ -358,14 +358,14 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
 
     # Moment and Force of thrust  is obtained in body reference
     Moment = np.zeros((g.N_eng, 3))
-    F_thrust_body = np.zeros((g.N_eng, 3))
+    F_thrust_body1 = np.zeros((g.N_eng, 3))
     for i in range(g.N_eng):
         a = np.array([g.xp[i], g.yp[i], g.zp[i]])
-        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip[i]), 0,-Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip[i])])
+        b = np.array([Fx_vec[i]*np.cos(g.alpha_i - g.alpha_0+g.ip[i]), 0, -Fx_vec[i]*np.sin(g.alpha_i - g.alpha_0+g.ip[i])])
         Moment[i, :] = np.cross(a, b)
-        F_thrust_body[i,:] = b
+        F_thrust_body1[i,:] = b
     Thrust_moment_body = np.array((np.sum(Moment[:, 0]), np.sum(Moment[:, 1]), np.sum(Moment[:, 2])))
-    F_thrust_body = np.array((np.sum(F_thrust_aero2[:, 0]), np.sum(F_thrust_aero2[:, 1]), np.sum(F_thrust_aero2[:, 2])))
+    F_thrust_body = np.array((np.sum(F_thrust_body1[:, 0]), np.sum(F_thrust_body1[:, 1]), np.sum(F_thrust_body1[:, 2])))
 
     Mt = Thrust_moment_body
 
@@ -404,7 +404,7 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
     Equations in aero frame. 
     By using this formulation you get directly V_dot, alpha_dot, gamma_dot, but the equations
     expressed like this (divided by g.m or g.Iy) are way smaller and its more easier to accomplish with 
-    A = 0 with same tolerance. In other words, if you write them like in version 2 you are decrasing tolerance.
+    A = 0 with same tolerance. In other words, if you write them like in version 1 you are decrasing tolerance.
     
     A[0] = +(F[0] + F_thrust_aero[0])/g.m
     A[1] = 9.81/V + (F[2] + F_thrust_aero[2])/(g.m*V)
@@ -412,23 +412,22 @@ def Long_equations(x, CoefMatrix, atmo, g, PropWing):
     A[3] = alpha + gamma - theta
     """
 
-    """
-    Version 2. 
-    Equations in aero frame. Keep in mind there are not V_dot, alpha_dot or gamma_dot
+
+    #Version 2. 
+    #Equations in aero frame. Keep in mind there are not V_dot, alpha_dot or gamma_dot
     A[0] = +(F[0] + F_thrust_aero[0]) - 9.81*g.m*np.sin(gamma)
     A[1] = 9.81*g.m*np.cos(gamma) + (F[2] + F_thrust_aero[2])
     A[2] = (Mt[1] + F[4])
     A[3] = alpha + gamma - theta
+
+
     """
-
-
-
-
-
     A[0] = +(F_aero_bodyref[0] + F_thrust_body[0]) - 9.81*g.m*np.sin(theta)
     A[1] = 9.81*g.m*np.cos(theta) + (F_aero_bodyref[2] + F_thrust_body[2])
     A[2] = (Mt[1] + F[4])
     A[3] = alpha + gamma - theta
+    """
+
 
 
 

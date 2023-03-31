@@ -169,7 +169,10 @@ class PropWing:
 
         # Both self.alpha0_fl and self.alpha0_ail are expressed in degrees/ degrees = rad/rad.
         # Is the change in degrees of the alpha_0 value for every degree of deflection of aileron/flap
-            
+
+        self.Cl_airfoil_us, self.Clalpha_airfoil, self.alpha0_airfoil = Read.ReadCl(Files['AirfoilPolar'])
+        self.Cl_flap_us, self.Clalpha_flap, self.alpha0_flap = Read.ReadCl(Files['FlapPolar'])
+
       
             
     def Interpol(self,Input,M):
@@ -271,11 +274,6 @@ class PropWing:
                 X = np.array([1, Lratio, Lratio**2, Lratio*1, 1, 1**2])
             # Compute the whole thing
             beta[i] = np.dot(self.C0, X) + np.dot(self.C1, X)*Rratio + np.dot(self.C2, X)*Rratio**2 + np.dot(self.C3, X)*Rratio**3 + np.dot(self.C4, X)*Rratio**4
-
-
-            if (SectMu[i] != 0) and (Mu[int(SectMu[i])-1] == 1):
-                continue
-                #beta[i] = 0  #You add this since for dx = 0 and mu=0 beta is not 0, but 0.92. Is not need since for mu=0, LmFl is 0 thanks to mu, even if beta =!0
         
         return beta
 
@@ -408,7 +406,6 @@ class PropWing:
 
         Cdi2 = Induced_Drag.Trefftz_drag(SortedCoef, plane, V)
 
-
         if plane.DisplayPatterInfo:
             print('TempYaw = {0:0.5f}, TempYaw_w = {1:0.5f}'.format(tempYaw, tempYaw_w))
             plt.figure()
@@ -426,7 +423,7 @@ class PropWing:
 
 
 
-        return np.array([tempCL, tempRoll, Cdi, tempCd0, tempYaw+tempYaw_w, tempCdWash])
+        return np.array([tempCL, tempRoll, Cdi2, tempCd0, tempYaw+tempYaw_w, tempCdWash])
 
 
 
@@ -610,9 +607,6 @@ class PropWing:
 
 
 
-
-
-
         # Compute AoA modification due to flaps
         if plane.isflap:
             alpha_fl = aoa - self.alpha0_fl * dfl
@@ -641,12 +635,16 @@ class PropWing:
         alpha_ail_t_l = alpha_ail_l - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
         alpha_ail_t_r = alpha_ail_r - alpha0w + plane.alpha_i + beta*plane.dihedral*np.sign(NormCl[:, 0]) + p * NormCl[:, 0]/Velocity[:]
 
-
         
         alpha_t_max = plane.alpha_max * np.ones_like(alpha0w)
         alpha_fl_t_max = plane.alpha_max_fl * np.ones_like(alpha0w) - self.alpha0_fl * dfl
-        
-        
+
+
+        #added
+        alpha_clean = (aoa + plane.alpha_i)*np.ones_like(NormCl[:, -1])
+
+
+
         #Determine if section is behind propeller, has flap or ailerons
         SectInProp = np.zeros(len(NormCl[:, 1]))
         SectHasFlap = [False]*len(NormCl[:, 1])
@@ -654,9 +652,6 @@ class PropWing:
         SectHasAilRight = [False]*len(NormCl[:, 1])
 
 
-
-
-                
         if plane.isflap:
             # Flap 1, negative y
             Fl1Tip = -plane.FlPosi*plane.b-plane.FlRatio*plane.b/2
@@ -747,11 +742,16 @@ class PropWing:
 
 
 
+                    #self.Cl_airfoil_us, self.Clalpha_airfoil, self.alpha0_airfoil = Read.ReadCl(Files['AirfoilPolar'])
+                    #self.Cl_flap_us, self.Clalpha_flap, self.alpha0_flap = Read.ReadCl(Files['FlapPolar'])
+
+                    x = self.Cl_airfoil_us(alpha_clean[i]) * (LocalCl[i, -1]/self.Clalpha_airfoil) - (LocalCl[i, -1]*alpha0w[i] -LocalCl[i, -1]*self.alpha0_airfoil)
+                    LocalCl[i, -1] = x + dfl*(self.Cl_flap_us(alpha_clean[i]) - self.Cl_airfoil_us(alpha_clean[i]))/(30*np.pi/180)
+
 
                     if alpha_ep[i] < alpha_fl_t_max[i]:
-                        LocalCl[i, -1] = LocalCl[i, -1] * alpha_fl_t[i]
+                        continue
                     else:
-                        LocalCl[i, -1] = LocalCl[i, -1] * np.sin(alpha_fl_t_max[i])*np.cos(alpha_fl_t[i])/np.cos(alpha_fl_t_max[i])
                         Region_in_stall[i] = True
                         if alpha_fl_t[i] < self.alphaDrag[-1]:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(alpha_fl_t[i])
@@ -820,13 +820,13 @@ class PropWing:
                     alpha_ep_drag[i] = alpha_ep[i]-alpha_t[i] + p * NormCl[i, 0]/Velocity[i]
 
 
-
+                    x = self.Cl_airfoil_us(alpha_clean[i]) * (LocalCl[i, -1]/self.Clalpha_airfoil) - (LocalCl[i, -1]*alpha0w[i] -LocalCl[i, -1]*self.alpha0_airfoil)
+                    LocalCl[i,-1] = x
 
 
                     if alpha_ep[i] < alpha_t_max[i]:
-                        LocalCl[i, -1] = LocalCl[i, -1] * alpha_t[i]
+                        continue
                     else:
-                        LocalCl[i, -1] = LocalCl[i, -1] * np.sin(alpha_t_max[i])*np.cos(alpha_t[i])/np.cos(alpha_t_max[i])
                         Region_in_stall[i] = True
                         if alpha_t[i] < self.alphaDrag[-1]:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(alpha_t[i])
@@ -839,11 +839,16 @@ class PropWing:
                 self.LocalVelocity[i] = V * (np.cos((-np.sign(NormCl[i, 0])) * beta + plane.wingsweep)) - r * NormCl[i, 0]
                 if SectHasFlap[i]:
                     alpha_ep[i] = alpha_fl_t[i]
+                    x = self.Cl_airfoil_us(alpha_clean[i]) * (LocalCl[i, -1]/self.Clalpha_airfoil) - (LocalCl[i, -1]*alpha0w[i] -LocalCl[i, -1]*self.alpha0_airfoil)
+                    LocalCl[i, -1] = x + dfl*(self.Cl_flap_us(alpha_clean[i]) - self.Cl_airfoil_us(alpha_clean[i]))/(30*np.pi/180)
+
+
+
+
                     # Check stall
                     if alpha_fl_t[i] < alpha_fl_t_max[i]:
-                        LocalCl[i, -1] = LocalCl[i, -1] * alpha_fl_t[i]
+                        continue
                     else:
-                        LocalCl[i, -1] = LocalCl[i, -1] * np.sin(alpha_fl_t_max[i])*np.cos(alpha_fl_t[i])/np.cos(alpha_fl_t_max[i])
                         Region_in_stall[i] = True
                         if alpha_fl_t[i] < self.alphaDrag[-1]:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(alpha_fl_t[i])
@@ -878,10 +883,12 @@ class PropWing:
                 
                 else:
                     alpha_ep[i] = alpha_t[i]
+                    x = self.Cl_airfoil_us(alpha_clean[i]) * (LocalCl[i, -1]/self.Clalpha_airfoil) - (LocalCl[i, -1]*alpha0w[i] -LocalCl[i, -1]*self.alpha0_airfoil)
+                    LocalCl[i,-1] = x
+
                     if alpha_t[i] < alpha_t_max[i]:
-                        LocalCl[i, -1] = LocalCl[i, -1] * alpha_t[i]
+                        continue
                     else:
-                        LocalCl[i, -1] = LocalCl[i, -1] * np.sin(alpha_t_max[i])*np.cos(alpha_t[i])/np.cos(alpha_t_max[i])
                         Region_in_stall[i] = True
                         if alpha_t[i] < self.alphaDrag[-1]:
                             self.Cd0_vec[i] = self.Cd0_vec[i]+self.StallDrag(alpha_t[i])
@@ -900,10 +907,6 @@ class PropWing:
 
         Vel = np.zeros(int(len(LocalCl))).reshape(int(len(LocalCl)), 1)
         Vel[:, 0] = Velocity
-
-
-
-
 
         return np.hstack((np.hstack((BlownCl, self.PWashDrag)), self.Cd0_vec, self.LocalVelocity, Vel))
 

@@ -234,12 +234,12 @@ class data:
     # alpha=0 coeff 77.67 m/s
 
     # without flaps
-    CD0T = 0.0537249  # from analysis. OPENVSP30 gives 0.056028, parasitic zero lift drag
+    CD0T = 0.0537249  # from analysis. OPENVSP30 gives 0.056028, parasitic zero lift drag. For flaps he says Cd0 = 0.0782 pATTERSON THESIS PG160
     CD0T_wo_VT = 0.0506759  # OpenVSP gives 0.003049
     CL0 = 0.75  # OpenVSP24 gives 0.758195    # Total CL0 including horizontal tail
     CL0_HT = -0.068519    # Interpolated effective zero lift of horizontal tail (70 m/s). Effective means the influence of the rest of the aircraft is considered (donwwash and tail dynamic pressure)
-    Cm0 = 0.022087
-    Cm0_wo_HT = -0.411305    # Cm0 of aircraft less horizontal tail
+    Cm0 = 0.022087 + 0.25
+    Cm0_wo_HT = -0.24786 + 0.25  # Cm0 of aircraft less horizontal tail
 
 
     # Drag polar without patterson. Interpolated from VSP v26, updated VSPAERO
@@ -268,8 +268,8 @@ class data:
 
 
     # 30° flaps
-    eps0_flaps30 = 2.230251 * np.pi/180    # DEFINIRLO  # [rad] Downwash at 0 angle of attack with 30° flaps configuration
-    deps_dalpha_flaps30 = 0.1530         # DEFINIRLO  # [rad/rad = °/° ] Derivative of downwash with respect to alpha, 30° flaps configuration
+    eps0_flaps30 = 4 * np.pi/180     # [rad] Downwash at 0 angle of attack with 30° flaps configuration. Computed with conventional flap, not Fowler
+    deps_dalpha_flaps30 = 0.1530         # [rad/rad = °/° ] Derivative of downwash with respect to alpha, 30° flaps configuration. Computed with conventional flap, not Fowler
 
 
 
@@ -288,9 +288,8 @@ class data:
 
     # airfoil zero lift angle: from zero lift line to reference line. Negative means that airfoil lifts with 0 local angle of attack measured to reference line
     alpha_0 = -7.25/180*np.pi  # [rad]
-     # You have to calculate this with the angle of attack you want for the case of blowing in the X-57;
-     # Here is calculated between 0 and 1 degree with the airfoil info. In the blowing normally gamma wont be zero and alpha we dont know
-     # From FEM files, the values are between -10.5596 and -8.91 , calculated between 0 and 1, so you may have to change this.
+    # This alpha_0 is just used for determining g.alpha_max and g.alpha_max_fl. They both determine the stall of the
+    # profiles. This is fine.
 
 
 
@@ -465,16 +464,16 @@ class data:
         if HLP == True:
 
 
-            self.PosiEng = np.array([-148.38, -125.7, -103.02, -80.34, -57.66, -34.98, 34.98, 57.66, 80.34, 103.02, 125.7, 148.38])*0.0254
             self.Dp =np.full(self.N_eng,22.67 * 0.0254)
             self.Sp = self.Dp**2/4*math.pi
+
 
             self.xp = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.02547
             self.yp = np.array([-148.38, -125.7, -103.02, -80.34, -57.66, -34.98, 34.98, 57.66, 80.34, 103.02, 125.7, 148.38])*0.0254
             self.zp = np.full(self.N_eng, -0.454052)  # vertical distance from center of gravity to propellers. Computed with OpenVSP
 
             #self.x_offset = 10*0.0254
-            self.offset = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.0254
+            self.x_offset = np.array([9.3, 11.6, 9.3, 11.6, 9, 10.5, 10.5, 9, 11.6, 9.1, 11.6, 9.1])*0.0254
 
             self.ip = np.full(self.N_eng, -7.25/180 * np.pi)
             # propeller incidence angle with respect to zero lift line of the profile. Negative means propeller line is below zero lift line.
@@ -483,8 +482,6 @@ class data:
 
         else:
 
-
-            self.PosiEng = np.array([-189.74, 189.74])*0.0254
             self.Dp = np.full(N_eng, 60 * 0.0254)
             self.Sp = self.Dp**2/4*math.pi
 
@@ -667,19 +664,32 @@ class data:
 
 
 
-    def HLP_thrust(self, dx, V,atmo):
+    def HLP_thrust2(self,V, atmo, n):
         # returns a vector
 
-        # J = (V)(nD) ;  V = freestream speed, n = revs/s, D=diameter
-        # Here Ct = T / (rho n^2 D^4)
-        # Thr = (rho n^2 D^4) * (f(J)) * dx
+        J = V / (n * self.Dp)
+        Thr = (atmo[1] * n**2 * self.Dp**4) * (-0.1084*J**2 - 0.1336*J + 0.3934)
 
-        J = V / ((4800/60) * self.Dp)
-        Thr = (atmo[1] * ((4800/60))**2 * self.Dp**4) * (-0.1084*J**2 - 0.1336*J + 0.3934)*dx
+        Cq = -0.0146*(J)**3 - 0.003*(J)**2 + 0.0025*(J) + 0.0452
+
         # Interpolation of High Lift Propellers Ct - J from XROTOR:
         # X-57 “Maxwell” High-Lift Propeller Testing and Model Development,  Fig 14
 
-        return Thr
+        return Thr, Cq
+
+    def Get_n(self, n, args):
+
+        dx = args[0]
+        V = args[1]
+        rho = args[2][1]
+        Pmax = 10500*12
+
+        Cq = -0.0146*(V/(n*self.Dp))**3 - 0.003*(V /(n*self.Dp))**2 + 0.0025*(V /(n*self.Dp)) + 0.0452
+        Cp1 = 2*np.pi*Cq
+        Cp2 = ((Pmax/self.N_eng)*dx)/(rho*n**3*self.Dp**5)
+
+        return (Cp1 - Cp2)
+
 
 
 
@@ -703,12 +713,76 @@ class data:
 
 
 
+    def HLP_thrust(self, dx, V,atmo):
+        # returns a vector
+
+
+        # Previous model
+        # J = (V)(nD) ;  V = freestream speed, n = revs/s, D=diameter
+        # Here Ct = T / (rho n^2 D^4)
+        # Thr = (rho n^2 D^4) * (f(J)) * dx
+
+        # This model is valid for the validation since they have done the conditions saying  Power = 0.39
+        # What i undertand from that is that propellers are to the 39% of their nominal power/thrust, therefore dx = 0.39
+        # This model works well since for dx = 1 and V = 28.3 m/s and sea level it predicts around 233 N
+        # From "X-57 “Maxwell” High-Lift Propeller Testing and Model Development" Page 11
+        # For example, the 10.3 kW power
+        # condition corresponds to the expected power required to produce 52.4 lbf (233.08) of thrust at 58 KEAS which represents the
+        # high-lift propeller condition at the minimum steady, level flight speed goal of the X-57.
+
+        J = V / ((4800/60) * self.Dp)
+        Thr = (atmo[1] * ((4800/60))**2 * self.Dp**4) * (-0.1084*J**2 - 0.1336*J + 0.3934)*dx
+
+
+
+        # Interpolation of High Lift Propellers Ct - J from XROTOR:
+        # X-57 “Maxwell” High-Lift Propeller Testing and Model Development,  Fig 14
+
+        return Thr
+
+
+
+
+
+
 
 
 
     def Thrust(self, dx, V, atmo):
+
+        """
         if self.HLP == True:
             return self.HLP_thrust(dx, V, atmo)
+        """
+
+
+
+        if self.HLP == True:
+            from scipy.optimize import fsolve
+            n = fsolve(self.Get_n, np.full(self.N_eng, 20), [dx, V, atmo])  # returns n in rev/s
+
+
+            Mach_max = 0.4961
+            wmax = (((atmo[0]*Mach_max)**2 - (V*(1+0.8))**2)**0.5)/(self.Dp*0.5)  # in rad/s
+            nmax = wmax/(2*np.pi) # in rev/s
+            for i in range(len(n)):
+                if n[i]>nmax[i]:
+                    n[i] = nmax[i]
+
+
+            Thr, Cq = self.HLP_thrust2(V, atmo, n)
+
+            Q = Cq * atmo[1] * n**2 * self.Dp**5
+            Cp = 2*np.pi*Cq
+            P = Cp * atmo[1] * n**3 * self.Dp**5
+            Total_power = np.sum(P)
+
+            for i in range(len(dx)):
+                if dx[i] == 0:
+                    Thr[i] = 0
+
+            return Thr
+
 
         if self.HLP == False:
             return self.Cruise_thrust(dx, V, atmo)

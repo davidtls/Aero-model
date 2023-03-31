@@ -11,6 +11,7 @@ import numpy as np
 import linecache
 import sys
 from scipy.interpolate import interp1d
+from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 
 def ReadAlpha0(file):
     ''' Go get the alpha 0 from a polar file'''
@@ -74,6 +75,43 @@ def ReadAlpha0_Improved(file):
     Alpha0 = - interpolation(0)/((interpolation(4)-interpolation(-5))/(4 - -5))
 
     return Alpha0
+
+
+
+def ReadCl(file):
+
+    ''' Retrieves Cl=Cl(alpha) as a spline'''
+
+    f = open(file, 'r')
+
+    startLog = False
+
+    CLTemp = np.array([])
+    alphaTemp = np.array([])
+
+    for lines in f:
+        words = lines.split()
+        if len(words) >= 2:
+            if words[0] == '-------':
+                # our data start next line
+                startLog = True
+                continue
+
+            if startLog:
+                alphaTemp = np.append(alphaTemp, float(words[0]))
+                CLTemp = np.append(CLTemp, float(words[1]))
+    u = IUS(alphaTemp*np.pi/180, CLTemp)
+
+    cl_alpha = (u(2*np.pi/180)-u(-2*np.pi/180))/(4*np.pi/180)
+    alpha0 = - u(0)/cl_alpha
+
+
+    #for i in np.linspace(-20, 20, 41):
+    #    print(u(i))
+
+
+
+    return u, cl_alpha, alpha0
 
 
 

@@ -29,6 +29,7 @@ import pylab
 import ReadFileUtils
 from StabilityMapUtils import equation as e
 from StabilityMapUtils import AeroForces
+import PattersonAugmented as PA
 import time
 import pickle
 import datetime
@@ -42,7 +43,7 @@ import CL_figure
 import Forces_test
 from StabilityMapUtils import Longitudinal
 from StabilityMapUtils import Equilibrated_polar as EQ
-
+import Archi_optim
 
 """
 Things to check:
@@ -60,7 +61,7 @@ Things to check:
 
 
 
-aircraft = {'model': 'ATR'}   #OPTIONS: ATR, DECOL, X-57
+aircraft = {'model': 'X-57'}   #OPTIONS: ATR, DECOL, X-57
 
 
 
@@ -212,12 +213,13 @@ elif aircraft['model'] == 'X-57':
     from AircraftClass import X57geometry
     from StabilityMapUtils import Longitudinal
 
+
     HLP = True
     if HLP:
         Neng = 12
         FlapDefl = 30 * np.pi / 180  # in degree standard flap deflection. Deflections allowed : 0 10 and 30 degree
-        V_base = 40.145
-        H_base = 762   # in m the altitude : 2434 m (cruise) / 0 m take-off
+        V_base = 28.3 #77.07 #49.182 #40.125
+        H_base = 0  # in m the altitude : 2434 m (cruise) / 0 m take-off / H=762 validation
     else:
         Neng = 2
         FlapDefl = 0 * np.pi / 180
@@ -454,7 +456,6 @@ g.Matrix_no_tail_terms = AeroForces.CoefInterpol(M_base, Matrix[:, 1:], Mach)
 
 
 
-# Define here the PropWing interaction
 
 PW = PA.PropWing(g, g.PropFilenames)
 PW.DeltaCL_a_0 = 1
@@ -463,7 +464,6 @@ PW.DeltaCL_a_0 = 1
 
 if aircraft['model']=='DECOL':
 
-            #PW.AoAZero[:,-1] = PW.AoAZero[:,-1] + 3.2/180*np.pi #correction for angle of incidence of wing
             PW.AoAZero[:, 0] = PW.AoAZero[:, 0]*10**(-3)
             PW.CLslope[:, 0] = PW.CLslope[:, 0]*10**(-3)
             PW.AoAZero[:, 1] = PW.AoAZero[:, 1]*10**(-6)
@@ -486,13 +486,14 @@ if aircraft['model']=='DECOL':
 
 #Forces_comparison = Forces_test.Constraints_DEP(Coef_base, atmospher, g, PW)
 #Forces_comparison = Forces_test.Constraints_DEP_body(Coef_base, atmospher, g, PW)
-Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
+#Forces_comparison = Forces_test.Long_equilibrium2(Coef_base, atmospher, g, PW)
+#Plots = Forces_test.PLOTSX57(Coef_base, atmospher, g, PW)
 
 
 # k, x, fixtest, diccons = EQ.Equilpolar(Matrix, CoefMatrix, Mach, g, PW)
 
 
-
+#k = Archi_optim.Archi_optim(Coef_base, atmospher, g, PW)
 
 
 
@@ -589,7 +590,7 @@ if g.Long_equilibrium:
     #Long_variables;   (to define a combination of 2 or less)
     alpha_long = "TS"
     gamma_long = 0
-    V_long = 40.145
+    V_long = "TS"
     de_long = "TS"
     dx_long = "TS"
     theta_long = "TS"

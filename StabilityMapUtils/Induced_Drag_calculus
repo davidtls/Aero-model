@@ -1,0 +1,462 @@
+
+
+
+
+There are several ways of caclulating the induced drag through the Lifting Line Theory
+
+https://www.youtube.com/watch?v=sAd55IRHNKM&list=LLCgI17svp5Ma_uOz3CHUvdA&ab_channel=Prof.VanBuren
+
+provides a very good explanation about the topic in case you don't remember.
+
+
+
+ REMARKS:
+
+     * SortedCoef['LocalChord'] is the vector that contains the chord of each span station
+
+     * SortedCoef['Cl'] is the vector that contains the Cl of each span station
+
+     * Vep_total = SortedCoef['Vep_total'] Contains the speed after the propeller seen by the profile.
+       (You should not use this speed for for calculating lift since augmented lift coefficients have already taken this into account,
+       otherwise is like taking into account twice the dynamic augmentation pressure). But for induced drag?
+
+     * Vi = SortedCoef['V_r_effects'] contains the normal speed V_inf with eventual effects from the yaw speed r.
+
+
+
+
+
+
+
+
+     * Circulation gamma(y) can be calculated thanks to Kutta- Yakowski equation:
+
+        L'(y) = rho * V(y) * gamma(y)
+
+           Expanding the lift per unit of wingspan
+
+        0.5 * rho * Vinf^2 * c(y) * Cl(y) = rho * V(y) * gamma(y)
+
+           Solving for gamma(y)
+
+        gamma(y) = 0.5 * (Vinf ^ 2) * (Cl(y)*c(y))/V(y)
+
+            For getting the induced speed modulus w the formula is:
+
+            w(y1) = (1/4pi) * integral from -b/2 to b/2  ( (d gamma / dy) / (y1-y) ) dy
+
+        And we can insert the value of gamma we have previously obtained.
+
+        The thing is we have to do a derivative, and then an integral. Derivative is delicate since there are strong
+        gradients. For the moment we will assume that V(y) = Vinf
+
+            gamma(y) = 0.5 * (Vinf) * Cl(y) * c(y)
+
+        And we will derivate it. In order to derivate think of it as several segments (wingspan stations) with the same
+        dy all, and a value of gamma for each dy. We have add two additional stations at each tip with Cl = -Cl(in stations
+        that arrive to the tip) so this way the value at the tip is exactly 0.
+
+
+        To do the derivative we will do central derivatives when we have two stations before and two stations after, and
+        forward and backwards for the tips.
+
+
+
+        To plot something we are going to do:
+
+
+
+
+        fig1 = plt.figure()
+        ax1 = fig1.gca()
+        ax1.plot(DiffclPosi, Extended_Cl, linestyle='-.', color='0.25')
+        ax1.set_xlabel('Y (m)')
+        ax1.set_ylabel('Cl*c')
+        ax1.legend()
+        ax1.grid()
+        fig1.tight_layout()
+
+
+        fig2 = plt.figure()
+        ax2 = fig2.gca()
+        ax2.plot(DiffclPosi, Diffcl, linestyle='-.', color='0.25')
+        ax2.set_xlabel('Y (m)')
+        ax2.set_ylabel('d(Cl*c)')
+        ax2.legend()
+        ax2.grid()
+        fig2.tight_layout()
+
+        plt.show(block=True)
+
+
+            if i == 0 or i == 1: # Forward differences
+                Diffcl[i] = (-3*Cl[i+0]+4*Cl[i+1]-1*Cl[i+2])/(2*dY)
+            elif i == (len(Cl)-1) or i == (len(Cl)-2): # Backward differences
+                Diffcl[i] = (1*Cl[i-2]-4*Cl[i-1]+3*Cl[i+0])/(2*dY)
+
+            else:
+                if abs(Extended_Cl[i+1]-Extended_Cl[i]) > 0.5: # Jump in the derivative, Backward differences
+                   Diffcl[i] = (1*Cl[i-2]-4*Cl[i-1]+3*Cl[i+0])/(2*dY)
+                if abs(Extended_Cl[i]-Extended_Cl[i-1]) > 0.5: # Jump in the derivative, Forward differences
+                    Diffcl[i] = (-3*Cl[i+0]+4*Cl[i+1]-1*Cl[i+2])/(2*dY)
+                else:  # Central differences
+
+
+
+SEMI CODE
+
+
+        Diffcl = np.zeros(len(Cl))
+        for i in range(len(Cl)):
+            if i == 0:  # Forward differences
+               Diffcl[i] = (-3*Cl[i+0]+4*Cl[i+1]-1*Cl[i+2])/(2*dY)
+            elif i == (len(Cl)-1):  # Backward differences
+               Diffcl[i] = (1*Cl[i-2]-4*Cl[i-1]+3*Cl[i+0])/(2*dY)
+            else:
+                if (abs(Extended_Cl[i+1]-Extended_Cl[i]) > 0.5) and (abs(Extended_Cl[i]-Extended_Cl[i-1]) > 0.5): # Strange, in X-57  2 stations with flap but not blown
+                    Diffcl[i] = Diffcl[i-1]
+                elif abs(Extended_Cl[i+1]-Extended_Cl[i]) > 0.5:
+                    Diffcl[i] = (1*Cl[i-2]-4*Cl[i-1]+3*Cl[i+0])/(2*dY)  # Backward differences. Augmentation/reduction of lift in next station edge
+                elif abs(Extended_Cl[i]-Extended_Cl[i-1]) > 0.5:
+                    Diffcl[i] = (-3*Cl[i+0]+4*Cl[i+1]-1*Cl[i+2])/(2*dY)  # Forward differences. Augmentaiton/Reduction of lift in previous station edge
+                else:
+                    Diffcl[i] = (-1*Cl[i-1]+0*Cl[i+0]+1*Cl[i+1])/(2*dY)
+
+
+
+
+
+
+
+
+
+
+
+CODE BEFORE:
+
+
+
+
+
+
+
+
+
+
+def SumDistributedCoef(self, DistCoef, plane, V):
+        ''' Takes as input the distributed coef
+        Returns CL and Cl (lift and rolling moment coefficient)
+
+        Recompute the induced velocity and sum the friction drag and prop wash.
+
+        The function works with organised coefficients in a dictionnary :
+            dtype=[('Yposi',np.float),('Area',np.float),('LocalChord',np.float),('Cl',np.float),('Cdw',np.float),('Cd0',np.float)]
+            The data typically comes from a VLM, it should be ordered from -b/2 to b/2
+        '''
+
+        SortedCoef = self.ReOrganiseLift(DistCoef)
+
+        Vep_total = SortedCoef['Vep_total']
+        Vi = SortedCoef['V_r_effects']
+
+        tempRoll = np.sum((-SortedCoef['Yposi']*SortedCoef['Cl']*SortedCoef['Area']*Vi**2))/(plane.b*plane.S*V**2)
+
+        tempCL = np.sum(SortedCoef['Cl'] * SortedCoef['Area'] * Vi**2) / (plane.S * V**2)
+
+        tempCdWash = np.sum(SortedCoef['Area'] * SortedCoef['Cdw'] * Vi**2) / (plane.S * V ** 2)
+
+        tempCd0 = np.sum(SortedCoef['Area'] * SortedCoef['Cd0'] * Vi**2) / (plane.S * V ** 2)
+
+
+        ### New integration for induced drag.
+        wiadim = np.zeros(len(SortedCoef['Yposi']))
+
+
+        """ The validation cases have full wing flaps which create a large lift differential at the wingtip
+        It is thought to be un-realistic based on the results.
+        For the validation cases the lift derivative is brought to zero at the extreme segments to avoid drag divergence
+        For normal use with flap not extending toward wingtip, the lift derivative has to be maintained """
+
+
+        """
+        Option 1: Fast computation no smoothing (better without flaps and rather low Tc):
+        Diffcl0 =(SortedCoef['LocalChord'][0]*SortedCoef['Cl'][0] - SortedCoef['LocalChord'][0]*0)/(SortedCoef['Yposi'][0]-(-plane.b/2))
+        Diffclend = (0-SortedCoef['LocalChord'][-1]*SortedCoef['Cl'][-1])/((plane.b/2)-SortedCoef['Yposi'][-1])
+        Diffcl = np.hstack( (Diffcl0, np.diff((SortedCoef['LocalChord']*SortedCoef['Cl']))/np.diff((SortedCoef['Yposi'])), Diffclend) )
+        """
+
+        """
+        Option 3: fast computation but over-smoothing, use only at large Tc > 0.3
+        testgrad1=np.gradient(Cl[1:-1],SortedCoef['Yposi'])
+        Diffcl=testgrad1
+        deltaij=np.ones(len(testgrad1))
+        for i in range(len(wiadim)):
+        den = SortedCoef['Yposi'][i]-SortedCoef['Yposi']
+        deltaij[i]=0
+        den[i]=1
+        wiadim[i] = np.trapz(testgrad1*deltaij/(den),SortedCoef['Yposi'])
+        deltaij[i]=1
+        """
+
+
+        # Option 1 : Fast computation smoothing (for study with flaps / high Tc)
+
+        #Choice 1: brings Cl to its negative symmetry (vortex)
+        Cl = np.hstack((-SortedCoef['LocalChord'][0]*SortedCoef['Cl'][0], SortedCoef['LocalChord']*SortedCoef['Cl'], -SortedCoef['LocalChord'][-1]*SortedCoef['Cl'][-1]))
+
+        #Choice 2: brings Cl to 0
+        #  Cl =np.hstack( (0, SortedCoef['LocalChord']*SortedCoef['Cl'], 0) )
+
+
+        dY = SortedCoef['Yposi'][-1]-SortedCoef['Yposi'][-2]
+        Yextended = np.hstack((SortedCoef['Yposi'][0]-dY, SortedCoef['Yposi'], SortedCoef['Yposi'][-1]+dY))
+        Diffcl1 = np.hstack((0, np.diff(Cl)/np.diff(Yextended)))        # diff gives out Cl[i+1]-Cl[i],Cl[i+2] - Cl[i+1] ...
+        Diffcl2 = np.hstack((np.diff(Cl)/np.diff(Yextended), 0))
+        Diffcl3 = (Diffcl1+Diffcl2)/2
+        Diffcl = (Diffcl3[:-1] + Diffcl3[1:])/2
+
+
+
+
+
+        #Adjust position. Yposi is in the center of the slices, DiffclPosi is in the extremes
+        DiffclPosi = np.hstack(((-plane.b/2), SortedCoef['Yposi'][1:] - np.diff(SortedCoef['Yposi'])/2, (plane.b/2)))
+
+
+
+
+        #Compute Downwash distribution by integration; 2 things needed: Diffcl, DiffclPosi
+        for i in range(len(wiadim)):
+            wiadim[i] = np.trapz(Diffcl/(SortedCoef['Yposi'][i]-DiffclPosi), DiffclPosi)
+
+
+        wiadim = wiadim * Vi * 1 / (8 * np.pi)
+        if self.PlotDrag == True:
+            self.wiadim = wiadim  # save for later plotting
+
+
+        # Compute new induced drag by integrating downwash wiadim
+
+        Cdi = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim, SortedCoef['Yposi'])/(plane.S*V)
+
+
+        self.Cdi_vec = np.zeros(len(SortedCoef['Yposi']))
+        for i in range(len(SortedCoef['Yposi'])):
+           self.Cdi_vec[i] = (SortedCoef['LocalChord'][i] * SortedCoef['Cl'][i] * wiadim[i]) * (DiffclPosi[i+1] - DiffclPosi[i])/(plane.S*V)
+
+
+        # Compute yaw moment due to asymetric induced velocity: sum cdi_local*ylocal
+        tempYaw = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim * SortedCoef['Yposi']*Vi**2, SortedCoef['Yposi']) / (plane.S * plane.b*V**3)
+
+        tempYaw_w = sum(SortedCoef['Area'] * SortedCoef['Cdw'] * (SortedCoef['Yposi'] * Vi**2)) / (plane.b * plane.S * V**2)
+
+
+
+        if plane.DisplayPatterInfo:
+            print('TempYaw = {0:0.5f}, TempYaw_w = {1:0.5f}'.format(tempYaw, tempYaw_w))
+            plt.figure()
+            plt.plot(SortedCoef['Yposi'], SortedCoef['LocalChord']*SortedCoef['Cl']*wiadim/(plane.c))
+            plt.xlabel('Span (m)')
+            plt.title('Cdi local')
+            plt.grid()
+
+            plt.figure()
+            plt.plot(DiffclPosi, Diffcl)
+            plt.title("Diffcl at panel seperation")
+            plt.grid(True)
+
+
+
+        return np.array([tempCL, tempRoll, Cdi, tempCd0, tempYaw+tempYaw_w, tempCdWash])
+
+
+
+
+
+THIS ONE WORKED KINDA
+
+    def SumDistributedCoef(self, DistCoef, plane, V):
+        ''' Takes as input the distributed coef
+        Returns CL and Cl (lift and rolling moment coefficient)
+
+        Recompute the induced velocity and sum the friction drag and prop wash.
+
+        The function works with organised coefficients in a dictionnary :
+            dtype=[('Yposi',np.float),('Area',np.float),('LocalChord',np.float),('Cl',np.float),('Cdw',np.float),('Cd0',np.float)]
+            The data typically comes from a VLM, it should be ordered from -b/2 to b/2
+        '''
+
+        SortedCoef = self.ReOrganiseLift(DistCoef)
+
+        Vep_total = SortedCoef['Vep_total']
+        Vi = SortedCoef['V_r_effects']
+
+        tempRoll = np.sum((-SortedCoef['Yposi']*SortedCoef['Cl']*SortedCoef['Area']*Vi**2))/(plane.b*plane.S*V**2)
+
+        tempCL = np.sum(SortedCoef['Cl'] * SortedCoef['Area'] * Vi**2) / (plane.S * V**2)
+
+        tempCdWash = np.sum(SortedCoef['Area'] * SortedCoef['Cdw'] * Vi**2) / (plane.S * V ** 2)
+
+        tempCd0 = np.sum(SortedCoef['Area'] * SortedCoef['Cd0'] * Vi**2) / (plane.S * V ** 2)
+
+        # Calculating induced velocity in center of span stations
+        wiadim = np.zeros(len(SortedCoef['Yposi']))
+
+
+
+
+        # Calculating Cl, y and chord in edges of span stations:
+        Extended_chord = np.hstack((SortedCoef['LocalChord'][0], 0.5*(SortedCoef['LocalChord'][:-1] + SortedCoef['LocalChord'][1:]), SortedCoef['LocalChord'][-1]))
+        dY = SortedCoef['Yposi'][-1]-SortedCoef['Yposi'][-2]
+        DiffclPosi = np.hstack(((-plane.b/2), SortedCoef['Yposi'][1:] - 0.5*np.diff(SortedCoef['Yposi']), (plane.b/2)))
+
+
+
+        # Extended_Cl = np.hstack((SortedCoef['Cl'][0], 0.5*(SortedCoef['Cl'][:-1] + SortedCoef['Cl'][1:]), SortedCoef['Cl'][-1]))
+
+
+        Extended_Cl = np.zeros((len(SortedCoef['Cl'])-1))
+
+        for i in range(len(SortedCoef['Cl'])-1):
+
+            if abs(SortedCoef['Cl'][i+1]-SortedCoef['Cl'][i]) > 0.5:
+                Extended_Cl[i] = max(SortedCoef['Cl'][i], SortedCoef['Cl'][i+1])
+            else:
+                Extended_Cl[i] = 0.5*(SortedCoef['Cl'][i] + SortedCoef['Cl'][i+1])
+
+        Extended_Cl = np.hstack((0, Extended_Cl, 0))  # Symmetric
+
+        # Calculating (Cl(y)*c(y) at edges of span stations for derivating it
+        Cl = Extended_Cl*Extended_chord
+
+
+        Diffcl = np.zeros(len(Cl))
+        for i in range(len(Cl)):
+            if i == 0:  # Forward differences
+                Diffcl[i] = (-3*Cl[i+0]+4*Cl[i+1]-1*Cl[i+2])/(2*dY)
+            elif i == (len(Cl)-1):  # Backward differences
+                Diffcl[i] = (1*Cl[i-2]-4*Cl[i-1]+3*Cl[i+0])/(2*dY)
+            else:
+                Diffcl[i] = (-1*Cl[i-1]+0*Cl[i+0]+1*Cl[i+1])/(2*dY)
+
+
+        #Compute Downwash distribution by integration; 2 things needed: Diffcl, DiffclPosi
+        for i in range(len(wiadim)):
+            wiadim[i] = Vi[i] * 1 / (8 * np.pi) * np.trapz(Diffcl/(SortedCoef['Yposi'][i]-DiffclPosi), DiffclPosi)
+
+        if self.PlotDrag == True:
+            self.wiadim = wiadim  # save for later plotting
+
+
+
+        Extended_wiadim = np.hstack((wiadim[0], 0.5*(wiadim[:-1]+wiadim[1:]), wiadim[-1]))
+
+
+        Cdi = np.trapz(Extended_chord * Extended_Cl * Extended_wiadim, DiffclPosi)/(plane.S*V)
+
+
+
+
+
+
+        """
+        Old Cdi computation, lets see if we improve it
+        # Compute new induced drag by integrating downwash wiadim
+        Cdi = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim, SortedCoef['Yposi'])/(plane.S*V)
+
+        self.Cdi_vec = np.zeros(len(SortedCoef['Yposi']))
+        for i in range(len(SortedCoef['Yposi'])):
+           self.Cdi_vec[i] = (SortedCoef['LocalChord'][i] * SortedCoef['Cl'][i] * wiadim[i]) * (DiffclPosi[i+1] - DiffclPosi[i])/(plane.S*V)
+        """
+
+        self.Cdi_vec = np.zeros(len(SortedCoef['Yposi']))
+        for i in range(len(SortedCoef['Yposi'])):
+            self.Cdi_vec[i] = (SortedCoef['LocalChord'][i] * SortedCoef['Cl'][i] * wiadim[i]) * (DiffclPosi[i+1] - DiffclPosi[i])/(plane.S*V)
+
+
+
+        # Compute yaw moment due to asymetric induced velocity: sum cdi_local*ylocal
+        tempYaw = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim * SortedCoef['Yposi']*Vi**2, SortedCoef['Yposi']) / (plane.S * plane.b*V**3)
+
+        tempYaw_w = sum(SortedCoef['Area'] * SortedCoef['Cdw'] * (SortedCoef['Yposi'] * Vi**2)) / (plane.b * plane.S * V**2)
+
+        return np.array([tempCL, tempRoll, Cdi, tempCd0, tempYaw+tempYaw_w, tempCdWash])
+
+
+
+
+
+
+
+
+
+
+NEW TESTING
+
+        ''' Takes as input the distributed coef
+        Returns CL and Cl (lift and rolling moment coefficient)
+
+        Recompute the induced velocity and sum the friction drag and prop wash.
+
+        The function works with organised coefficients in a dictionnary :
+            dtype=[('Yposi',np.float),('Area',np.float),('LocalChord',np.float),('Cl',np.float),('Cdw',np.float),('Cd0',np.float)]
+            The data typically comes from a VLM, it should be ordered from -b/2 to b/2
+        '''
+
+        SortedCoef = self.ReOrganiseLift(DistCoef)
+
+        Vep_total = SortedCoef['Vep_total']
+        Vi = SortedCoef['V_r_effects']
+
+        tempRoll = np.sum((-SortedCoef['Yposi']*SortedCoef['Cl']*SortedCoef['Area']*Vi**2))/(plane.b*plane.S*V**2)
+
+        tempCL = np.sum(SortedCoef['Cl'] * SortedCoef['Area'] * Vi**2) / (plane.S * V**2)
+
+        tempCdWash = np.sum(SortedCoef['Area'] * SortedCoef['Cdw'] * Vi**2) / (plane.S * V ** 2)
+
+        tempCd0 = np.sum(SortedCoef['Area'] * SortedCoef['Cd0'] * Vi**2) / (plane.S * V ** 2)
+
+        # Calculating induced velocity in center of span stations
+        wiadim = np.zeros(len(SortedCoef['Yposi']))
+
+
+        dY = SortedCoef['Yposi'][-1]-SortedCoef['Yposi'][-2]
+        DiffclPosi = np.hstack(((-plane.b/2), SortedCoef['Yposi'][1:] - 0.5*np.diff(SortedCoef['Yposi']), (plane.b/2)))
+
+
+        Diffcl = np.zeros(len(SortedCoef['Cl']))
+        Cl=SortedCoef['Cl']*SortedCoef['LocalChord']
+        for i in range(len(SortedCoef['Cl'])):
+            if i == 0:  # Forward differences
+                Diffcl[i] = (-3*Cl[i+0]+4*Cl[i+1]-1*Cl[i+2])/(2*dY)
+            elif i == (len(SortedCoef['Cl'])-1):  # Backward differences
+                Diffcl[i] = (1*Cl[i-2]-4*Cl[i-1]+3*Cl[i+0])/(2*dY)
+            else:
+                Diffcl[i] = (-1*Cl[i-1]+0*Cl[i+0]+1*Cl[i+1])/(2*dY)
+
+
+        wiadim = np.zeros(len(SortedCoef['Yposi']))
+
+        for i in range(len(wiadim)):
+            Sumation_vector = Diffcl/(SortedCoef['Yposi'][i] - SortedCoef['Yposi'])
+            Sumation_vector[i]=0
+            wiadim[i] = Vi[i] / (8*np.pi*plane.b) * np.sum(Sumation_vector)
+
+
+        if self.PlotDrag == True:
+            self.wiadim = wiadim  # save for later plotting
+
+
+
+        Cdi = np.sum(SortedCoef['LocalChord']*SortedCoef['Area']* SortedCoef['Cl'] * wiadim)/(plane.S*V)
+
+
+        self.Cdi_vec = np.zeros(len(SortedCoef['Yposi']))
+        for i in range(len(SortedCoef['Yposi'])):
+            self.Cdi_vec[i] = (SortedCoef['LocalChord'][i] * SortedCoef['Cl'][i] * wiadim[i]) * (DiffclPosi[i+1] - DiffclPosi[i])/(plane.S*V)
+
+        # Compute yaw moment due to asymetric induced velocity: sum cdi_local*ylocal
+        tempYaw = np.trapz(SortedCoef['LocalChord'] * SortedCoef['Cl'] * wiadim * SortedCoef['Yposi']*Vi**2, SortedCoef['Yposi']) / (plane.S * plane.b*V**3)
+
+        tempYaw_w = sum(SortedCoef['Area'] * SortedCoef['Cdw'] * (SortedCoef['Yposi'] * Vi**2)) / (plane.b * plane.S * V**2)
+

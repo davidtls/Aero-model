@@ -24,7 +24,7 @@ class data:
 
     # --- Mass ---
     x_cg = 1.9566  # [m] (behind the tip)
-    m = 142.711  # [Kg]
+    m = 142.711  # [Kg] 161 han metido maz baterias
 
 
     # --- Geometry ---
